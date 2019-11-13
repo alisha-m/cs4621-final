@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>CS 4621: Terrain Generator</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/cs4620.css" rel="stylesheet">
+    <link href="css/jquery-ui.min.css" rel="stylesheet">
+    <link href="css/jquery-ui.theme.min.css" rel="stylesheet">
+    <link href="css/jquery-ui.structure.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+<div class="container">
+    <h1>CS 4621 Final <span class="subtitle">Terrain Generator</span></h1>
+    <div align="center">
+        <canvas tabindex="1" id="webglCanvas" style="border: none; background-color: black;" width="800" height="600"></canvas>
+    </div>
+</div>
+
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="jsjquery-3.1.1.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/gl-matrix-min.js"></script>
+<script src="js/preloadjs-0.6.2.min.js"></script>
+
+<!-- Our own scripts -->
+<script src="js/gl/render.js"></script>
+
+<script id="vertexShader" type="x-shader/x-vertex">
+attribute vec3 vert_position;
+attribute vec2 vert_texCoord;
+
+// transformation matrices
+uniform mat4 modelViewProjection;
+
+varying vec2 geom_texCoord;
+
+void main() {
+    gl_Position = modelViewProjection * vec4(vert_position, 1.0);
+
+    geom_texCoord = vert_texCoord;
+}
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+precision highp float;
+
+uniform sampler2D texture1;
+
+varying vec2 geom_texCoord;
+
+void main() {
+    gl_FragColor = texture2D(texture1, geom_texCoord);
+}
+</script>
+</body>
+</html>

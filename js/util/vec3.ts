@@ -1,0 +1,1 @@
+class vec3
