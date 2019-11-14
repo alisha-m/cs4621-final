@@ -7,7 +7,7 @@ export class Material {
         this.shaderData = [];
     }
 
-    addShaderData(varName, varData, isAttrib) {
+    addShaderData(varName: string, varData: any, isAttrib: boolean) {
         let shaderVar = new ShaderVar(varName, varData, isAttrib);
         this.shaderData.push(shaderVar);
     }

@@ -8004,7 +8004,6 @@ var forEach = function () {
 exports.forEach = forEach;
 },{"./common.js":1}],12:[function(require,module,exports){
 var gl_matrix_1 = require('gl-matrix');
-
 // Initializes webgl object. Handles errors related to this.
 // @param {html canvas element} canvas - The canvas of the webpage.
 // @return {gl} the WebGl data structure which will contain webgl functionality
@@ -8146,6 +8145,4 @@ function runWebGl(scene) {
     requestAnimationFrame(updateWebGl);
 }
 
-
-console.log("Hey there!");
 },{"gl-matrix":2}]},{},[12]);

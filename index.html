@@ -27,6 +27,35 @@
     <div align="center">
         <canvas tabindex="1" id="webglCanvas" style="border: none; background-color: black;" width="800" height="600"></canvas>
     </div>
+
+    <table class="table table-bordered">
+        <tr>
+            <td align="right"><b>Field of view:</b></td>
+            <td>
+                <input type="text" id="fovSpinner" value="80.0">
+            </td>
+        </tr>
+        <tr>
+            <td align="right"><b>Eye height:</b></td>
+            <td>
+                <input type="text" id="eyeHeightSpinner" value="0.5">
+            </td>
+        </tr>
+        <tr>
+            <td align="right"><b>Maze:</b></td>
+            <td>
+                <textarea style="font-family: monospace" id="mazeTextArea" cols="25" rows="10">
+#####
+#...#
+#.#.#
+#N..#
+#####
+</textarea>
+                <br>
+                <button id="updateMazeButton">Update Maze</button>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
@@ -36,7 +65,14 @@
 <script src="js/preloadjs-0.6.2.min.js"></script>
 
 <!-- Our own scripts -->
-<script src="bundle.js"></script>
+<script src="src/Scene/material.js"></script>
+<script src="src/Scene/geometry.js"></script>
+<script src="src/Scene/transform.js"></script>
+<script src="src/Scene/scene-object.js"></script>
+<script src="src/Scene/camera.js"></script>
+<script src="src/Scene/mesh-object.js"></script>
+<script src="src/Scene/scene.js"></script>
+<script src="src/gl/render.js"></script>
 
 <script id="vertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;

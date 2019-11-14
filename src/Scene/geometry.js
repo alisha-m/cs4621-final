@@ -1,15 +1,13 @@
-// contains list of triangles which make up the geometry. Defined in local space.
-var Geometry = (function () {
-    function Geometry() {
+class Geometry {
+    constructor() {
         this.triangles = [];
     }
-    return Geometry;
-})();
-exports.Geometry = Geometry;
-var Triangle = (function () {
-    function Triangle(vertexA, vertexB, vertexC) {
+}
+
+class Triangle {
+    constructor(vertexA, vertexB, vertexC) {
         this.vertices = [vertexA, vertexB, vertexC];
+        this.uvs = [];
+        this.normals = [];
     }
-    return Triangle;
-})();
-exports.Triangle = Triangle;
+}

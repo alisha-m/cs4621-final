@@ -10,7 +10,6 @@ export class Geometry {
 }
 
 export class Triangle {
-    // This should be a list of gl-matrix vec3's, but I can't get their typing lmao
     public vertices: vec3[];
     public uvs: vec2[];
     public normals: vec3[];

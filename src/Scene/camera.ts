@@ -11,8 +11,8 @@ export class Camera extends SceneObject {
     // far clipping plane distance
     public far: number;
 
-    private defaultCamDir;
-    private camUp;
+    private defaultCamDir: vec3;
+    private camUp: vec3;
 
     constructor(
         name: string, transform: Transform, 

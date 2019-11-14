@@ -183,3 +183,5 @@ function runWebGl(scene: Scene) {
 
     requestAnimationFrame(updateWebGl);
 }
+
+console.log("Everything went well");
