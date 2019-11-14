@@ -8,12 +8,10 @@ export class SceneObject {
 
     public transform: Transform;
 
-    // objects which are subnodes of this object in the scene "Tree"
-    public children: SceneObject[];
+    // TODO: Allow children of SceneObjects
 
     constructor(name: string, transform: Transform) {
         this.name = name;
         this.transform = transform;
-        this.children = [];
     }
 }
