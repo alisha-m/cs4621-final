@@ -1,13 +1,15 @@
 class Geometry {
     constructor() {
-        this.triangles = [];
+        this.vertices = [];
+        this.uvs = [];
+        this.normals = [];
+        this.faces = [];
     }
 }
 
-class Triangle {
-    constructor(vertexA, vertexB, vertexC) {
-        this.vertices = [vertexA, vertexB, vertexC];
-        this.uvs = [];
-        this.normals = [];
+class Face {
+    // TODO: perhaps have more stuff here
+    constructor(a, b, c) {
+        this.indices = vec3.fromValues(a, b, c);
     }
 }

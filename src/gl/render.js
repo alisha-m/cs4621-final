@@ -323,7 +323,6 @@ function getQuadShapeData(center, rotation, width, height) {
     let texCoords = [];
     let indices = [];
     
-
     function pushPos(vec) {
         for (let i = 0; i < 3; i++) {
             positions.push(vec[i]);
@@ -361,11 +360,33 @@ function getQuadShapeData(center, rotation, width, height) {
         0, 2, 3 // top triangle: bottom Left, top right, top left
     ];
 
+    // TODO: Make this into a geometry
+    let quadGeom = new Geometry();
+    quadGeom.vertices.push(bottomLeft);
+    quadGeom.vertices.push(bottomRight);
+    quadGeom.vertices.push(topRight);
+    quadGeom.vertices.push(topLeft);
+
+    quadGeom.uvs.push(vec2.fromValues(0, 0));
+    quadGeom.uvs.push(vec2.fromValues(3, 0));
+    quadGeom.uvs.push(vec2.fromValues(3, 3));
+    quadGeom.uvs.push(vec2.fromValues(0, 3));
+
+    for (let i = 0; i < 4; i++) {
+        quadGeom.normals.push(vec3.fromValues(0, 0, 1));
+    }
+
+    let bottomFace = new Face(0, 1, 2);
+    let topFace = new Face(0, 2, 3);
+    quadGeom.faces.push(bottomFace);
+    quadGeom.faces.push(topFace);
+
     return {
         positions: positions,
         normals: normals,
         texCoords: texCoords,
-        indices: indices
+        indices: indices,
+        geometry: quadGeom
     }
 }
 
@@ -399,6 +420,44 @@ function createShape(gl, shapeData) {
     shape.positionOffset = 4 * 0;
     shape.normalOffset = 4 * 3;
     shape.texCoordOffset = 4 * (3 + 3);
+    return shape;
+}
+
+function createShapeG(gl, geometry) {
+    let shape = {};
+
+    let vertexData = [];
+    let vertexCount = geometry.vertices.length;
+    for (let i = 0; i < vertexCount; i++) {
+        vertexData.push(geometry.vertices[i][0], geometry.vertices[i][1], geometry.vertices[i][2]);
+        vertexData.push(geometry.normals[i][0], geometry.normals[i][1], geometry.normals[i][2]);
+        vertexData.push(geometry.uvs[i][0], geometry.uvs[i][1]);
+    }
+
+    let vertexArray = new Float32Array(vertexData);
+    let vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    let indices = [];
+    let faceCount = geometry.faces.length;
+    for (let i = 0; i < faceCount; i++) {
+        indices.push(geometry.faces[i].indices[0], geometry.faces[i].indices[1], geometry.faces[i].indices[2]);
+    }
+    let indexArray = new Uint16Array(indices);
+    let indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    shape.vertexBuffer = vertexBuffer;
+    shape.indexBuffer = indexBuffer;
+    shape.size = indexArray.length;
+    shape.stride = vertexCount * (3 + 3 + 2);
+    shape.positionOffset = vertexCount * 0;
+    shape.normalOffset = vertexCount * 3;
+    shape.texCoordOffset = vertexCount * (3 + 3);
     return shape;
 }
 
@@ -565,7 +624,7 @@ function runWebGL(floorImage, wallImage) {
 
     let fov = getFov();
     let aspectRatio = canvas.width / canvas.height;
-    let near = .1;
+    let near = 0.1;
     let far = 100;
 
     camera = getCamera(mazeToWorld(maze.startPosition), maze.startHeading, getEyeHeight());
@@ -581,7 +640,6 @@ function runWebGL(floorImage, wallImage) {
         fov = getFov();
 
         if (mazeChanged) {
-            console.log("Updating maze:");
             mazeChanged = false;
             // setup maze again
             shapeData = updateMaze();
@@ -605,7 +663,6 @@ function runWebGL(floorImage, wallImage) {
                 timeElapsed = 0;
 
                 camera.heading = targetHeading;
-                console.log(camera.heading);
             } else {
                 camera.heading = lerpf(camera.heading, targetHeading, timeElapsed / ANIMATION_DURATION);
             }
@@ -623,7 +680,6 @@ function runWebGL(floorImage, wallImage) {
                 camera.position[0] = lerpf(camera.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
                 camera.position[1] = lerpf(camera.position[1], targetPos[1], timeElapsed / ANIMATION_DURATION);
                 camera.position[2] = lerpf(camera.position[2], targetPos[2], timeElapsed / ANIMATION_DURATION);
-                console.log("MOVE!");
             }
         }
         // STOP CAMERA UPDATAE STUFF
@@ -633,7 +689,8 @@ function runWebGL(floorImage, wallImage) {
             setupTexture(gl, program, floorTexture, gl.TEXTURE0, 0);
             for (let i = 0; i < floorQuadDatas.length; i++) {
                 let floorQuadData = floorQuadDatas[i];
-                let floorQuad = createShape(gl, floorQuadData);
+                // let floorQuad = createShape(gl, floorQuadData);
+                let floorQuad = createShapeG(gl, floorQuadData.geometry)
 
                 updateMVP(
                     gl, program,
@@ -680,7 +737,6 @@ startWebGL();
 
 // "MAIN" CODE HERE
 $("#updateMazeButton").click(() => {
-    console.log("Update maze button clicked!");
     mazeChanged = true;
 });
 
@@ -693,7 +749,6 @@ $("#webglCanvas").keydown(function (event) {
     if (event.which == 37 && !turning && !turning) { //arrow left, turn left
         turning = true;
         targetHeading += Math.PI / 2;
-        console.log("turn left");
     }
     else if (event.which == 38 && !moving && !turning) { //arrow up, move up
         let currentMazePos = worldToMaze(camera.position);
