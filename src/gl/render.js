@@ -124,8 +124,8 @@ function updateMaze() {
 
 // construct the 3D meshes of the maze
 function constructMaze() {
-    let wallQuads = [];
-    let floorQuads = [];
+    let wallMeshes = [];
+    let floorMeshes = [];
 
     let width = 1;
     let height = 1;
@@ -165,34 +165,34 @@ function constructMaze() {
                 if (drawLeft) {
                     let leftWallCenter = vec3.fromValues(left, centerY, wallZ); 
                     let leftWallShapeData = getQuadMesh(leftWallCenter, leftRotation, width, height);
-                    wallQuads.push(leftWallShapeData);
+                    wallMeshes.push(leftWallShapeData);
                 }
                 if (drawRight) {
                     let rightWallCenter = vec3.fromValues(right, centerY, wallZ);
                     let rightWallShapeData = getQuadMesh(rightWallCenter, rightRotation, width, height);
-                    wallQuads.push(rightWallShapeData);
+                    wallMeshes.push(rightWallShapeData);
                 }
                 if (drawBottom) {
                     let bottomWallCenter = vec3.fromValues(centerX, bottom, wallZ);
                     let bottomWallShapeData = getQuadMesh(bottomWallCenter, bottomRotation, width, height);
-                    wallQuads.push(bottomWallShapeData);
+                    wallMeshes.push(bottomWallShapeData);
                 }
                 if (drawTop) {
                     let topWallCenter = vec3.fromValues(centerX, top, wallZ);
                     let topWallShapeData = getQuadMesh(topWallCenter, topRotation, width, height);
-                    wallQuads.push(topWallShapeData);
+                    wallMeshes.push(topWallShapeData);
                 }
             } else {
                 let floorCenter = vec3.fromValues(centerX, centerY, floorZ);
                 let floorShapeData = getQuadMesh(floorCenter, floorRotation, width, height);
-                floorQuads.push(floorShapeData);
+                floorMeshes.push(floorShapeData);
             }
         }
     }
 
     return {
-        wallQuadDatas: wallQuads,
-        floorQuadDatas: floorQuads
+        wallMeshes: wallMeshes,
+        floorMeshes: floorMeshes
     };
 }
 
@@ -319,9 +319,9 @@ function getQuadMesh(center, rotation, width, height) {
     quadGeom.vertices.push(topLeft);
 
     quadGeom.uvs.push(vec2.fromValues(0, 0));
-    quadGeom.uvs.push(vec2.fromValues(3, 0));
-    quadGeom.uvs.push(vec2.fromValues(3, 3));
-    quadGeom.uvs.push(vec2.fromValues(0, 3));
+    quadGeom.uvs.push(vec2.fromValues(1.333, 0));
+    quadGeom.uvs.push(vec2.fromValues(1.333, 1.333));
+    quadGeom.uvs.push(vec2.fromValues(0, 1.333));
 
     for (let i = 0; i < 4; i++) {
         quadGeom.normals.push(vec3.fromValues(0, 0, 1));
@@ -346,6 +346,8 @@ function getQuadMesh(center, rotation, width, height) {
 
 function createShape(gl, geometry) {
     let shape = {};
+
+    console.log(geometry);
 
     let vertexData = [];
     let vertexCount = geometry.vertices.length;
@@ -413,11 +415,15 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
 
 function getModel(meshObject) {
     let transform = mat4.create();
-    mat4.translate(transform, transform, meshObject.transform.position);
-    mat4.rotateX(transform, transform, meshObject.transform.rotation[0]);
-    mat4.rotateY(transform, transform, meshObject.transform.rotation[1]);
-    mat4.rotateZ(transform, transform, meshObject.transform.rotation[2]);
-    mat4.scale(transform, transform, meshObject.transform.localScale);
+    // mat4.translate(transform, transform, meshObject.transform.position);
+    // // negative translation
+    // let negativeTranslation = vec3.create();
+
+    // mat4.rotateX(transform, transform, vec3.create(), meshObject.transform.rotation[0]);
+    // mat4.rotateY(transform, transform, vec3.create(), meshObject.transform.rotation[1]);
+    // mat4.rotateZ(transform, transform, negativeTranslation, meshObject.transform.rotation[2]);
+    // mat4.scale(transform, transform, meshObject.transform.localScale);
+    return transform;
 }
 
 function getView(camPos, camDir, camUp) {
@@ -437,19 +443,21 @@ function getProjection(fieldOfView, aspectRatio, near, far) {
     return projectionMatrix;
 }
 
-function getMVP(viewMatrix, projectionMatrix) {
+function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
     let mvpMatrix = mat4.create();
     mat4.multiply(mvpMatrix, mvpMatrix, projectionMatrix);
     mat4.multiply(mvpMatrix, mvpMatrix, viewMatrix);
+    mat4.multiply(mvpMatrix, mvpMatrix, modelMatrix);
 
     return mvpMatrix;
 }
 
-function updateMVP(gl, program, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+function updateMVP(gl, program, meshObject, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+    let modelMatrix = getModel(meshObject);
     let viewMatrix = getView(camPos, camDir, camUp);
     let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
 
-    var mvpMatrix = getMVP(viewMatrix, projectionMatrix);
+    var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
 
     var mvpLocation = gl.getUniformLocation(program, "modelViewProjection");
 
@@ -543,9 +551,9 @@ function runWebGL(floorImage, wallImage) {
     var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
 
     // get the vertex datas for the maze
-    var shapeData = updateMaze();
-    var wallQuadDatas = shapeData.wallQuadDatas;
-    var floorQuadDatas = shapeData.floorQuadDatas;
+    var meshData = updateMaze();
+    var wallMeshes = meshData.wallMeshes;
+    var floorMeshes = meshData.floorMeshes;
 
     let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
     let camDir = vec3.fromValues(1, 0, 0);
@@ -572,9 +580,9 @@ function runWebGL(floorImage, wallImage) {
         if (mazeChanged) {
             mazeChanged = false;
             // setup maze again
-            shapeData = updateMaze();
-            wallQuadDatas = shapeData.wallQuadDatas;
-            floorQuadDatas = shapeData.floorQuadDatas;
+            meshData = updateMaze();
+            wallMeshes = meshData.wallMeshes;
+            floorMeshes = meshData.floorMeshes;
 
             // put the camera in the default pos
             camera.position = targetPos;
@@ -617,12 +625,13 @@ function runWebGL(floorImage, wallImage) {
         // draw all the floors
         if (gl.getUniformLocation(program, "texture1") != null) {
             setupTexture(gl, program, floorTexture, gl.TEXTURE0, 0);
-            for (let i = 0; i < floorQuadDatas.length; i++) {
-                let floorQuadData = floorQuadDatas[i];
-                let floorQuad = createShape(gl, floorQuadData.geometry);
+            for (let i = 0; i < floorMeshes.length; i++) {
+                let floorQuadMesh = floorMeshes[i];
+                let floorQuad = createShape(gl, floorQuadMesh.geometry);
 
                 updateMVP(
                     gl, program,
+                    floorQuadMesh,
                     camera.position, getDirection(camera.heading), testCamUp,
                     fov, aspectRatio, near, far
                 );
@@ -635,17 +644,18 @@ function runWebGL(floorImage, wallImage) {
         if (gl.getUniformLocation(program, "texture1") != null) {
             setupTexture(gl, program, wallTexture, gl.TEXTURE1, 1);
 
-            for (let i = 0; i < wallQuadDatas.length; i++) {
-                let wallQuadData = wallQuadDatas[i];
-                let wallQuad = createShape(gl, wallQuadData.geometry);
+            for (let i = 0; i < wallMeshes.length; i++) {
+                let wallMesh = wallMeshes[i];
+                let wallShape = createShape(gl, wallMesh.geometry);
 
                 updateMVP(
                     gl, program,
+                    wallMesh,
                     camera.position, getDirection(camera.heading), testCamUp,
                     fov, aspectRatio, near, far
                 );
 
-                draw(gl, program, wallQuad, () => {});
+                draw(gl, program, wallShape, () => {});
             }
         }
         
