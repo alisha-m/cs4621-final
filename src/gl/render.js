@@ -306,18 +306,18 @@ function getQuadMesh(center, rotation, width, height) {
     rotateVec(bottomLeft, rotation);
     rotateVec(bottomRight, rotation);
 
-    vec3.add(topLeft, topLeft, center);
-    vec3.add(topRight, topRight, center);
-    vec3.add(bottomLeft, bottomLeft, center);
-    vec3.add(bottomRight, bottomRight, center);
+    // vec3.add(topLeft, topLeft, center);
+    // vec3.add(topRight, topRight, center);
+    // vec3.add(bottomLeft, bottomLeft, center);
+    // vec3.add(bottomRight, bottomRight, center);
 
-    // TODO: Make this into a geometry
     let quadGeom = new Geometry();
     quadGeom.vertices.push(bottomLeft);
     quadGeom.vertices.push(bottomRight);
     quadGeom.vertices.push(topRight);
     quadGeom.vertices.push(topLeft);
 
+    // TODO: Figure out why uvs are multiplied by 3/2
     quadGeom.uvs.push(vec2.fromValues(0, 0));
     quadGeom.uvs.push(vec2.fromValues(1.333, 0));
     quadGeom.uvs.push(vec2.fromValues(1.333, 1.333));
@@ -346,8 +346,6 @@ function getQuadMesh(center, rotation, width, height) {
 
 function createShape(gl, geometry) {
     let shape = {};
-
-    console.log(geometry);
 
     let vertexData = [];
     let vertexCount = geometry.vertices.length;
@@ -415,7 +413,7 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
 
 function getModel(meshObject) {
     let transform = mat4.create();
-    // mat4.translate(transform, transform, meshObject.transform.position);
+    mat4.translate(transform, transform, meshObject.transform.position);
     // // negative translation
     // let negativeTranslation = vec3.create();
 
