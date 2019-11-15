@@ -164,27 +164,27 @@ function constructMaze() {
 
                 if (drawLeft) {
                     let leftWallCenter = vec3.fromValues(left, centerY, wallZ); 
-                    let leftWallShapeData = getQuadShapeData(leftWallCenter, leftRotation, width, height);
+                    let leftWallShapeData = getQuadMesh(leftWallCenter, leftRotation, width, height);
                     wallQuads.push(leftWallShapeData);
                 }
                 if (drawRight) {
                     let rightWallCenter = vec3.fromValues(right, centerY, wallZ);
-                    let rightWallShapeData = getQuadShapeData(rightWallCenter, rightRotation, width, height);
+                    let rightWallShapeData = getQuadMesh(rightWallCenter, rightRotation, width, height);
                     wallQuads.push(rightWallShapeData);
                 }
                 if (drawBottom) {
                     let bottomWallCenter = vec3.fromValues(centerX, bottom, wallZ);
-                    let bottomWallShapeData = getQuadShapeData(bottomWallCenter, bottomRotation, width, height);
+                    let bottomWallShapeData = getQuadMesh(bottomWallCenter, bottomRotation, width, height);
                     wallQuads.push(bottomWallShapeData);
                 }
                 if (drawTop) {
                     let topWallCenter = vec3.fromValues(centerX, top, wallZ);
-                    let topWallShapeData = getQuadShapeData(topWallCenter, topRotation, width, height);
+                    let topWallShapeData = getQuadMesh(topWallCenter, topRotation, width, height);
                     wallQuads.push(topWallShapeData);
                 }
             } else {
                 let floorCenter = vec3.fromValues(centerX, centerY, floorZ);
-                let floorShapeData = getQuadShapeData(floorCenter, floorRotation, width, height);
+                let floorShapeData = getQuadMesh(floorCenter, floorRotation, width, height);
                 floorQuads.push(floorShapeData);
             }
         }
@@ -283,14 +283,8 @@ function loadTexture(gl, image, activeTexture) {
         return texture;
 }
 
-
-// creates a flat-lying quad in the XY plane, store rotation so that the model matrix can rotate it in the shader
-// gl - the webgl object
-// center - vec3 of the center of the quad
-// rotation - vec3 of the rotation of the quad in euler angles
-// width - width of the quad horizontally assuming it's lying flat (X-axis)
-// heihgt - height of hte quad vertically assumming it's lying flat (Y-axis)
-function getQuadShapeData(center, rotation, width, height) {
+function getQuadMesh(center, rotation, width, height) {
+    // Create geometry
     let halfWidth = width/2;
     let halfHeight = height/2;
 
@@ -317,49 +311,6 @@ function getQuadShapeData(center, rotation, width, height) {
     vec3.add(bottomLeft, bottomLeft, center);
     vec3.add(bottomRight, bottomRight, center);
 
-
-    let positions = [];
-    let normals = [];
-    let texCoords = [];
-    let indices = [];
-    
-    function pushPos(vec) {
-        for (let i = 0; i < 3; i++) {
-            positions.push(vec[i]);
-        }
-    }
-
-    pushPos(bottomLeft);
-    pushPos(bottomRight);
-    pushPos(topRight);
-    pushPos(topLeft);
-    
-    // this will literally just have the same normal at every vertex
-    // just make the same normal for each one, assume flat face that will be roateted in model matrix
-    for (let i = 0; i < 3*4; i++) {
-        normals.push(0); // normal X
-        normals.push(0); // normal Y
-        normals.push(1); // normal Z
-    }
-
-    // for texture coordinates, do it in the same order
-    texCoords.push(0); // bottom left U
-    texCoords.push(0); // bottom left V
-
-    texCoords.push(3);// bottom right U
-    texCoords.push(0);// bottom right V
-    
-    texCoords.push(3);// top right U
-    texCoords.push(3);// top right V
-    
-    texCoords.push(0);// top left U
-    texCoords.push(3);// top left V
-
-    indices = [
-        0, 1, 2, // bottom triangle : bottom Left, bottom right, top right
-        0, 2, 3 // top triangle: bottom Left, top right, top left
-    ];
-
     // TODO: Make this into a geometry
     let quadGeom = new Geometry();
     quadGeom.vertices.push(bottomLeft);
@@ -381,49 +332,19 @@ function getQuadShapeData(center, rotation, width, height) {
     quadGeom.faces.push(bottomFace);
     quadGeom.faces.push(topFace);
 
-    return {
-        positions: positions,
-        normals: normals,
-        texCoords: texCoords,
-        indices: indices,
-        geometry: quadGeom
-    }
+    // Create material
+    let quadMat = new Material("vertexShader", "fragmentShader");
+
+    // Create transform:
+    let quadTransform = new Transform(center, rotation, vec3.fromValues(width, height, 1));
+
+    // Create mesh object
+    let quadMesh = new MeshObject("Quad", quadTransform, quadGeom, quadMat);
+
+    return quadMesh;
 }
 
-function createShape(gl, shapeData) {
-    var shape = {};
-
-    var vertexData = [];
-    var vertexCount = shapeData.positions.length / 3;
-    var i;
-    for (i = 0; i < vertexCount; i++) {
-        vertexData.push(shapeData.positions[3 * i], shapeData.positions[3 * i + 1], shapeData.positions[3 * i + 2]);
-        vertexData.push(shapeData.normals[3 * i], shapeData.normals[3 * i + 1], shapeData.normals[3 * i + 2]);
-        vertexData.push(shapeData.texCoords[2 * i], shapeData.texCoords[2 * i + 1]);
-    }
-    var vertexArray = new Float32Array(vertexData);
-    var vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    var indexArray = new Uint16Array(shapeData.indices);
-    var indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    shape.vertexBuffer = vertexBuffer;
-    shape.indexBuffer = indexBuffer;
-    shape.size = shapeData.indices.length;
-    shape.stride = 4 * (3 + 3 + 2);
-    shape.positionOffset = 4 * 0;
-    shape.normalOffset = 4 * 3;
-    shape.texCoordOffset = 4 * (3 + 3);
-    return shape;
-}
-
-function createShapeG(gl, geometry) {
+function createShape(gl, geometry) {
     let shape = {};
 
     let vertexData = [];
@@ -488,6 +409,15 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
     // Step 3: Set the texture uniform to the "index" of the texture unit you just activated
     var textureLocation = gl.getUniformLocation(program, "texture1");
     gl.uniform1i(textureLocation, textureIdx);
+}
+
+function getModel(meshObject) {
+    let transform = mat4.create();
+    mat4.translate(transform, transform, meshObject.transform.position);
+    mat4.rotateX(transform, transform, meshObject.transform.rotation[0]);
+    mat4.rotateY(transform, transform, meshObject.transform.rotation[1]);
+    mat4.rotateZ(transform, transform, meshObject.transform.rotation[2]);
+    mat4.scale(transform, transform, meshObject.transform.localScale);
 }
 
 function getView(camPos, camDir, camUp) {
@@ -565,7 +495,7 @@ function getDirection(h){
 
 // TODO: Fix this
 function lerpf(a, b, t) {
-    return a + (b -a) * (-(t-1) * (t-1) + 1);
+    return a + (b -a) * t;
 }
 
 function isWalkable(targetMazePos) {
@@ -689,8 +619,7 @@ function runWebGL(floorImage, wallImage) {
             setupTexture(gl, program, floorTexture, gl.TEXTURE0, 0);
             for (let i = 0; i < floorQuadDatas.length; i++) {
                 let floorQuadData = floorQuadDatas[i];
-                // let floorQuad = createShape(gl, floorQuadData);
-                let floorQuad = createShapeG(gl, floorQuadData.geometry)
+                let floorQuad = createShape(gl, floorQuadData.geometry);
 
                 updateMVP(
                     gl, program,
@@ -708,7 +637,7 @@ function runWebGL(floorImage, wallImage) {
 
             for (let i = 0; i < wallQuadDatas.length; i++) {
                 let wallQuadData = wallQuadDatas[i];
-                let wallQuad = createShape(gl, wallQuadData);
+                let wallQuad = createShape(gl, wallQuadData.geometry);
 
                 updateMVP(
                     gl, program,
