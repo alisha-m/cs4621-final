@@ -10,6 +10,8 @@ class Scene {
         this.sceneObjects.push(sceneObject);
 
         if (sceneObject instanceof MeshObject) {
+            sceneObject.material.textureIdx = this.meshObjects.length;
+            
             this.meshObjects.push(sceneObject);
         }
     }

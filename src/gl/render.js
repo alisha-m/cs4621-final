@@ -456,8 +456,8 @@ function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
     return mvpMatrix;
 }
 
-function updateMVP(gl, program, meshObject, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
-    let modelMatrix = getModel(meshObject.transform);
+function updateMVP(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+    let modelMatrix = getModel(transform);
     let viewMatrix = getView(camPos, camDir, camUp);
     let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
 
@@ -556,10 +556,22 @@ function runWebGL() {
     var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
 
     // get the vertex datas for the maze
-    var meshData = updateMaze();
-    var wallMeshes = meshData.wallMeshes;
-    var floorMeshes = meshData.floorMeshes;
+    var mazeMeshes = updateMaze();
+    var wallMeshes = mazeMeshes.wallMeshes;
+    var floorMeshes = mazeMeshes.floorMeshes;
+    
+    // make scene objects for walls and floors
+    for (let i = 0; i < wallMeshes.length; i++) {
+        wallMeshes[i].material.texture = wallTexture;
+        scene.addSceneObject(wallMeshes[i]);
+    }
+    for (let i = 0; i < floorMeshes.length; i++) {
+        floorMeshes[i].material.texture = floorTexture;
+        scene.addSceneObject(floorMeshes[i]);
+    }
 
+    
+    // make camera and add it to the scene
     let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
     let camDir = vec3.fromValues(1, 0, 0);
     vec3.rotateZ(camDir, camDir, vec3.create(), maze.startHeading);
@@ -571,8 +583,9 @@ function runWebGL() {
     let far = 100;
 
     let camTransform = new Transform(mazeToWorld(maze.startPosition), vec3.fromValues(0, maze.startHeading, 0));
-    scene.camera = new Camera("Maze Camera", camTransform, getFov(), 800/600, 0.1, 100);
+    scene.camera = new Camera("Maze Camera", camTransform, fov, aspectRatio, near, far);
     
+    // setup time stuff
     var lastTime = jQuery.now();
     var deltaTime = 0;
     function updateWebGl() {
@@ -589,6 +602,17 @@ function runWebGL() {
             meshData = updateMaze();
             wallMeshes = meshData.wallMeshes;
             floorMeshes = meshData.floorMeshes;
+
+            scene.removeAllSceneObjects();
+
+            for (let i = 0; i < wallMeshes.length; i++) {
+                wallMeshes[i].material.texture = wallTexture;
+                scene.addSceneObject(wallMeshes[i]);
+            }
+            for (let i = 0; i < floorMeshes.length; i++) {
+                floorMeshes[i].material.texture = floorTexture;
+                scene.addSceneObject(floorMeshes[i]);
+            }
 
             // put the camera in the default pos
             scene.camera.transform.position = targetPos;
@@ -626,45 +650,34 @@ function runWebGL() {
                 scene.camera.transform.position[2] = lerpf(scene.camera.transform.position[2], targetPos[2], timeElapsed / ANIMATION_DURATION);
             }
         }
-        // STOP CAMERA UPDATAE STUFF
+        // STOP CAMERA UPDATE STUFF
 
-        // draw all the floors
+        // draw all scene objects
+        // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
+        // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         if (gl.getUniformLocation(program, "texture1") != null) {
-            setupTexture(gl, program, floorTexture, gl.TEXTURE0, 0);
-            for (let i = 0; i < floorMeshes.length; i++) {
-                let floorQuadMesh = floorMeshes[i];
-                let floorQuad = createShape(gl, floorQuadMesh.geometry);
+            // TODO: Draw objects from scene
+            for (let i = 0; i < scene.meshObjects.length; i++) {
+                let mesh = scene.meshObjects[i];
+
+                if (mesh.material.textureIdx > -1) {
+                    setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
+                }
+
+                // TODO: Don't assume that you're drawing a quad
+                let quad = createShape(gl, mesh.geometry);
 
                 updateMVP(
                     gl, program,
-                    floorQuadMesh,
+                    mesh.transform,
                     scene.camera.transform.position, getDirection(scene.camera.transform.rotation[1]), testCamUp,
                     fov, aspectRatio, near, far
                 );
 
-                draw(gl, program, floorQuad, () => {});
+                draw(gl, program, quad, () => {});
             }
         }
 
-        // draw all the walls
-        if (gl.getUniformLocation(program, "texture1") != null) {
-            setupTexture(gl, program, wallTexture, gl.TEXTURE1, 1);
-
-            for (let i = 0; i < wallMeshes.length; i++) {
-                let wallMesh = wallMeshes[i];
-                let wallShape = createShape(gl, wallMesh.geometry);
-
-                updateMVP(
-                    gl, program,
-                    wallMesh,
-                    scene.camera.transform.position, getDirection(scene.camera.transform.rotation[1]), testCamUp,
-                    fov, aspectRatio, near, far
-                );
-
-                draw(gl, program, wallShape, () => {});
-            }
-        }
-        
         requestAnimationFrame(updateWebGl);
     }
 

@@ -3,19 +3,20 @@ class Material {
         this.vertexShaderId = vertexShaderId;
         this.fragmentShaderId = fragmentShaderId;
         this.shaderData = {};
+        // TODO: Maybe don't assume one texture per object
+        this.texture = null;
+        this.textureIdx = -1;
     }
 
-    addShaderData(varName, varData, isAttrib) {
-        let shaderVar = new ShaderVar(varName, varData, isAttrib);
+    addShaderData(varName, varData) {
+        let shaderVar = new ShaderVar(varName, varData);
         this.shaderData.push(shaderVar);
     }
 }
 
 class ShaderVar {
-    constructor(varName, varData, isAttrib) {
-        this.isAttribute = isAttrib;
-        this.isUniform = !isAttrib;
-
+    // TODO: Add parameter for type of data
+    constructor(varName, varData) {
         this.varName = varName;
         this.varData = varData;
     }
