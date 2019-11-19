@@ -288,28 +288,12 @@ function getQuadMesh(center, rotation, width, height) {
     let halfWidth = width/2;
     let halfHeight = height/2;
 
-    let topLeft = vec3.fromValues(-halfWidth, halfHeight, 0);
-    let topRight = vec3.fromValues(halfWidth, halfHeight, 0);
-    let bottomLeft = vec3.fromValues(-halfWidth, -halfHeight, 0);
-    let bottomRight = vec3.fromValues(halfWidth, -halfHeight, 0);
+    let topLeft = vec3.fromValues(-0.5, 0.5, 0);
+    let topRight = vec3.fromValues(0.5, 0.5, 0);
+    let bottomLeft = vec3.fromValues(-0.5, -0.5, 0);
+    let bottomRight = vec3.fromValues(0.5, -0.5, 0);
 
     let origin = vec3.fromValues(0, 0, 0);
-
-    function rotateVec(vec, rotation) {
-        vec3.rotateX(vec, vec, origin, rotation[0]);
-        vec3.rotateY(vec, vec, origin, rotation[1]);
-        vec3.rotateZ(vec, vec, origin, rotation[2]);
-    }
-
-    rotateVec(topLeft, rotation);
-    rotateVec(topRight, rotation);
-    rotateVec(bottomLeft, rotation);
-    rotateVec(bottomRight, rotation);
-
-    // vec3.add(topLeft, topLeft, center);
-    // vec3.add(topRight, topRight, center);
-    // vec3.add(bottomLeft, bottomLeft, center);
-    // vec3.add(bottomRight, bottomRight, center);
 
     let quadGeom = new Geometry();
     quadGeom.vertices.push(bottomLeft);
@@ -319,9 +303,9 @@ function getQuadMesh(center, rotation, width, height) {
 
     // TODO: Figure out why uvs are multiplied by 3/2
     quadGeom.uvs.push(vec2.fromValues(0, 0));
-    quadGeom.uvs.push(vec2.fromValues(1.333, 0));
-    quadGeom.uvs.push(vec2.fromValues(1.333, 1.333));
-    quadGeom.uvs.push(vec2.fromValues(0, 1.333));
+    quadGeom.uvs.push(vec2.fromValues(1, 0));
+    quadGeom.uvs.push(vec2.fromValues(1, 1));
+    quadGeom.uvs.push(vec2.fromValues(0, 1));
 
     for (let i = 0; i < 4; i++) {
         quadGeom.normals.push(vec3.fromValues(0, 0, 1));
@@ -411,17 +395,39 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
     gl.uniform1i(textureLocation, textureIdx);
 }
 
-function getModel(meshObject) {
-    let transform = mat4.create();
-    mat4.translate(transform, transform, meshObject.transform.position);
-    // // negative translation
-    // let negativeTranslation = vec3.create();
+var xAxis = vec3.fromValues(1, 0, 0);
+var yAxis = vec3.fromValues(0, 1, 0);
+var zAxis = vec3.fromValues(0, 0, 1);
 
-    // mat4.rotateX(transform, transform, vec3.create(), meshObject.transform.rotation[0]);
-    // mat4.rotateY(transform, transform, vec3.create(), meshObject.transform.rotation[1]);
-    // mat4.rotateZ(transform, transform, negativeTranslation, meshObject.transform.rotation[2]);
-    // mat4.scale(transform, transform, meshObject.transform.localScale);
-    return transform;
+function getModel(transform) {
+    // translate
+    let T = mat4.create();
+    mat4.fromTranslation(T, transform.position);
+
+    // rotate
+    let R = mat4.create();
+    // XYZ Order
+    mat4.rotate(R, R, transform.rotation[0], xAxis);
+    mat4.rotate(R, R, transform.rotation[1], yAxis);
+    mat4.rotate(R, R, transform.rotation[2], zAxis);
+
+    // ZYX Order
+    // mat4.rotate(R, R, transform.rotation[2], zAxis);
+    // mat4.rotate(R, R, transform.rotation[1], yAxis);
+    // mat4.rotate(R, R, transform.rotation[0], xAxis);
+
+    // scale
+    let S = mat4.create();
+    mat4.fromScaling(S, transform.localScale);
+
+    let M = mat4.create();
+
+    // TRS order
+    mat4.mul(M, M, T);
+    mat4.mul(M, M, R);
+    mat4.mul(M, M, S);
+
+    return M;
 }
 
 function getView(camPos, camDir, camUp) {
@@ -451,7 +457,7 @@ function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
 }
 
 function updateMVP(gl, program, meshObject, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
-    let modelMatrix = getModel(meshObject);
+    let modelMatrix = getModel(meshObject.transform);
     let viewMatrix = getView(camPos, camDir, camUp);
     let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
 
@@ -466,30 +472,6 @@ function storeLocations(gl, program) {
     program.vert_position = gl.getAttribLocation(program, "vert_position");
     program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
     program.mvp = gl.getUniformLocation(program, "modelViewProjection");
-}
-
-function startWebGL() {
-    // create image data structures
-
-    var floorImage = new Image();
-    floorImage.crossOrigin = "anonymous";
-    floorImage.src = "data/floor.jpg";
-
-    var wallImage = new Image();
-    wallImage.crossOrigin = "anonymous";
-
-    wallImage.onload = () => {
-        runWebGL(floorImage, wallImage);
-    }
-
-    wallImage.src = "data/wall.jpg";
-}
-
-function getCamera(position, heading) {
-    return {
-        position: position,
-        heading: heading
-    }
 }
 
 // 0.25 sec = 250 ms
@@ -511,7 +493,7 @@ function isWalkable(targetMazePos) {
         return false;
     }
 
-    return (maze.data[targetMazePos[0]][targetMazePos[1]] != 1);
+    return (maze.data[Math.ceil(targetMazePos[0])][Math.ceil(targetMazePos[1])] != 1);
 }
 
 function limitAngle(h){
@@ -526,12 +508,35 @@ function limitAngle(h){
 }
 
 // give camera default values for now
-var camera = getCamera(vec3.create(), 0);
+var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
+var camera = new Camera("Maze Camera", camTransform, getFov(), 800/600, 0.1, 100);
+var scene = new Scene(camera);
+
+function startWebGL() {
+    // create image data structures
+
+    var floorImage = new Image();
+    floorImage.crossOrigin = "anonymous";
+    floorImage.src = "data/floor.jpg";
+
+    var wallImage = new Image();
+    wallImage.crossOrigin = "anonymous";
+
+    wallImage.onload = () => {
+        scene.images.floorImage = floorImage;
+        scene.images.wallImage = wallImage;
+
+
+        runWebGL();
+    }
+
+    wallImage.src = "data/wall.jpg";
+}
 
 var turning = false;
 var moving = false;
 var timeElapsed = 0;
-function runWebGL(floorImage, wallImage) {
+function runWebGL() {
     var gl = initializeWebGL($("#webglCanvas"));
     var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
 
@@ -545,6 +550,8 @@ function runWebGL(floorImage, wallImage) {
     gl.disable(gl.CULL_FACE);
 
     // setup shaders
+    let floorImage = scene.images.floorImage;
+    let wallImage = scene.images.wallImage;
     var floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
     var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
 
@@ -563,7 +570,8 @@ function runWebGL(floorImage, wallImage) {
     let near = 0.1;
     let far = 100;
 
-    camera = getCamera(mazeToWorld(maze.startPosition), maze.startHeading, getEyeHeight());
+    let camTransform = new Transform(mazeToWorld(maze.startPosition), vec3.fromValues(0, maze.startHeading, 0));
+    scene.camera = new Camera("Maze Camera", camTransform, getFov(), 800/600, 0.1, 100);
     
     var lastTime = jQuery.now();
     var deltaTime = 0;
@@ -571,7 +579,7 @@ function runWebGL(floorImage, wallImage) {
         gl.clearColor(0.53, 0.81, 0.92, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        camera.position[2] = getEyeHeight();
+        scene.camera.transform.position[2] = getEyeHeight();
 
         fov = getFov();
 
@@ -583,8 +591,8 @@ function runWebGL(floorImage, wallImage) {
             floorMeshes = meshData.floorMeshes;
 
             // put the camera in the default pos
-            camera.position = targetPos;
-            camera.heading = targetHeading;
+            scene.camera.transform.position = targetPos;
+            scene.camera.transform.rotation = vec3.fromValues(0, targetHeading, 0);
         }
         
         // START CAMERA UPDATE STUFF
@@ -598,9 +606,9 @@ function runWebGL(floorImage, wallImage) {
                 turning = false;
                 timeElapsed = 0;
 
-                camera.heading = targetHeading;
+                scene.camera.transform.rotation[1] = targetHeading;
             } else {
-                camera.heading = lerpf(camera.heading, targetHeading, timeElapsed / ANIMATION_DURATION);
+                scene.camera.transform.rotation[1] = lerpf(scene.camera.transform.rotation[1], targetHeading, timeElapsed / ANIMATION_DURATION);
             }
         }
         // update camera position
@@ -610,12 +618,12 @@ function runWebGL(floorImage, wallImage) {
                 moving = false;
                 timeElapsed = 0;
 
-                camera.position = targetPos;
+                scene.camera.transform.position = targetPos;
             } else {
                 // vec3.lerp(camera.position, camera.position, targetPos, timeElapsed / ANIMATION_DURATION);
-                camera.position[0] = lerpf(camera.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
-                camera.position[1] = lerpf(camera.position[1], targetPos[1], timeElapsed / ANIMATION_DURATION);
-                camera.position[2] = lerpf(camera.position[2], targetPos[2], timeElapsed / ANIMATION_DURATION);
+                scene.camera.transform.position[0] = lerpf(scene.camera.transform.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
+                scene.camera.transform.position[1] = lerpf(scene.camera.transform.position[1], targetPos[1], timeElapsed / ANIMATION_DURATION);
+                scene.camera.transform.position[2] = lerpf(scene.camera.transform.position[2], targetPos[2], timeElapsed / ANIMATION_DURATION);
             }
         }
         // STOP CAMERA UPDATAE STUFF
@@ -630,7 +638,7 @@ function runWebGL(floorImage, wallImage) {
                 updateMVP(
                     gl, program,
                     floorQuadMesh,
-                    camera.position, getDirection(camera.heading), testCamUp,
+                    scene.camera.transform.position, getDirection(scene.camera.transform.rotation[1]), testCamUp,
                     fov, aspectRatio, near, far
                 );
 
@@ -649,7 +657,7 @@ function runWebGL(floorImage, wallImage) {
                 updateMVP(
                     gl, program,
                     wallMesh,
-                    camera.position, getDirection(camera.heading), testCamUp,
+                    scene.camera.transform.position, getDirection(scene.camera.transform.rotation[1]), testCamUp,
                     fov, aspectRatio, near, far
                 );
 
@@ -661,13 +669,6 @@ function runWebGL(floorImage, wallImage) {
     }
 
     requestAnimationFrame(updateWebGl);
-}
-
-function getCamera(position,heading) {
-    return {
-        position: position,
-        heading: heading,
-    }
 }
 
 startWebGL();
@@ -688,8 +689,8 @@ $("#webglCanvas").keydown(function (event) {
         targetHeading += Math.PI / 2;
     }
     else if (event.which == 38 && !moving && !turning) { //arrow up, move up
-        let currentMazePos = worldToMaze(camera.position);
-        let moveAmount = vec2.fromValues(Math.cos(camera.heading), Math.sin(camera.heading));        
+        let currentMazePos = worldToMaze(scene.camera.transform.position);
+        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1]), Math.sin(scene.camera.transform.rotation[1]));        
 
         let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
         vec2.add(targetMazePos, targetMazePos, moveAmount);
@@ -704,8 +705,8 @@ $("#webglCanvas").keydown(function (event) {
         targetHeading -= Math.PI / 2;
     }
     else if (event.which == 40 && !moving && !turning){ //arrow down
-        let currentMazePos = worldToMaze(camera.position);
-        let moveAmount = vec2.fromValues(Math.cos(camera.heading + Math.PI), Math.sin(camera.heading + Math.PI));        
+        let currentMazePos = worldToMaze(scene.camera.transform.position);
+        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1] + Math.PI), Math.sin(scene.camera.transform.rotation[1] + Math.PI));        
 
         let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
         vec2.add(targetMazePos, targetMazePos, moveAmount);

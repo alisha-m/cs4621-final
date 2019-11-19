@@ -2,7 +2,7 @@ class Material {
     constructor(vertexShaderId, fragmentShaderId) {
         this.vertexShaderId = vertexShaderId;
         this.fragmentShaderId = fragmentShaderId;
-        this.shaderData = [];
+        this.shaderData = {};
     }
 
     addShaderData(varName, varData, isAttrib) {
