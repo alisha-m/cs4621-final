@@ -303,8 +303,11 @@ function run() {
     var lastTime = jQuery.now();
     var deltaTime = 0;
     function update() {
-        if (!renderer.loadingComplete) return;
-        
+        if (!renderer.loadingComplete) {
+            console.log(renderer.loadingComplete);
+            requestAnimationFrame(update);
+            return;
+        }
         // Step 1: Update the scene
         // START MAZE UPDATE
         if (mazeChanged) {

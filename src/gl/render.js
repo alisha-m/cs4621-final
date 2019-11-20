@@ -4,12 +4,12 @@ var xAxis = vec3.create(1, 0, 0);
 var yAxis = vec3.create(0, 1, 0);
 var zAxis = vec3.create(0, 0, 1);
 
-var loadingComplete = false;
-
 class Renderer {
     constructor(imageSources) {
         this.imageSources = imageSources;
         this.sceneTextures = [];
+
+        this.loadingComplete = false;
 
         this.startRendering();
     }
@@ -28,6 +28,8 @@ class Renderer {
             alert("Could not get WebGL context!");
             throw new Error("Could not get WebGL context!");
         }
+
+        this.gl = gl;
 
         return gl;
     }
@@ -285,7 +287,7 @@ class Renderer {
                 loadedCount += 1;
                 if (loadedCount >= imageCount) {
                     console.log("images loaded");
-                    loadingComplete = true;
+                    this.loadingComplete = true;
                     return this.setupTextures(gl, images);
                 }
             };
