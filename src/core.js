@@ -645,8 +645,7 @@ function runWebGL() {
             } else {
                 // vec3.lerp(camera.position, camera.position, targetPos, timeElapsed / ANIMATION_DURATION);
                 scene.camera.transform.position[0] = lerpf(scene.camera.transform.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
-                scene.camera.transform.position[1] = lerpf(scene.camera.transform.position[1], targetPos[1], timeElapsed / ANIMATION_DURATION);
-                scene.camera.transform.position[2] = lerpf(scene.camera.transform.position[2], targetPos[2], timeElapsed / ANIMATION_DURATION);
+                
             }
         }
         // STOP CAMERA UPDATE STUFF

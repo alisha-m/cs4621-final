@@ -268,14 +268,6 @@ function run() {
     var wallMeshes = mazeMeshes.wallMeshes;
     var floorMeshes = mazeMeshes.floorMeshes;
 
-    for (let i = 0; i < wallMeshes.length; i++) {
-        wallMeshes[i].material.textureSrc = "data/wall.jpg";
-        scene.addSceneObject(wallMeshes[i]);
-    }
-    for (let i = 0; i < floorMeshes.length; i++) {
-        floorMeshes[i].material.textureSrc = "data/floor.jpg";
-        scene.addSceneObject(floorMeshes[i]);
-    }
 
     // make camera and scene
     let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
@@ -292,6 +284,15 @@ function run() {
     camera = new Camera("Maze Camera", camTransform, fov, aspectRatio, near, far);
     scene = new Scene(camera);
 
+    for (let i = 0; i < wallMeshes.length; i++) {
+        wallMeshes[i].material.textureSrc = "data/wall.jpg";
+        scene.addSceneObject(wallMeshes[i]);
+    }
+    for (let i = 0; i < floorMeshes.length; i++) {
+        floorMeshes[i].material.textureSrc = "data/floor.jpg";
+        scene.addSceneObject(floorMeshes[i]);
+    }
+
     // setup renderer
     let imageSources = ["data/wall.jpg", "data/floor.jpg"];
     var renderer = new Renderer(imageSources);
@@ -302,6 +303,8 @@ function run() {
     var lastTime = jQuery.now();
     var deltaTime = 0;
     function update() {
+        if (!renderer.loadingComplete) return;
+        
         // Step 1: Update the scene
         // START MAZE UPDATE
         if (mazeChanged) {

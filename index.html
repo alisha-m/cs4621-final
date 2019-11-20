@@ -64,6 +64,34 @@
 <script src="js/gl-matrix-min.js"></script>
 <script src="js/preloadjs-0.6.2.min.js"></script>
 
+<!-- Shaders -->
+<script id="vertexShader" type="x-shader/x-vertex">
+    attribute vec3 vert_position;
+    attribute vec2 vert_texCoord;
+    
+    // transformation matrices
+    uniform mat4 modelViewProjection;
+    
+    varying vec2 geom_texCoord;
+    
+    void main() {
+        gl_Position = modelViewProjection * vec4(vert_position, 1.0);
+    
+        geom_texCoord = vert_texCoord;
+    }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+    precision highp float;
+    
+    uniform sampler2D texture1;
+    
+    varying vec2 geom_texCoord;
+    
+    void main() {
+        gl_FragColor = texture2D(texture1, geom_texCoord);
+    }
+</script>
+
 <!-- Our own scripts -->
 <script src="src/Scene/material.js"></script>
 <script src="src/Scene/geometry.js"></script>
@@ -76,31 +104,5 @@
 <script src="src/core.js"></script>
 <!-- <script src="src/test-core.js"></script> -->
 
-<script id="vertexShader" type="x-shader/x-vertex">
-attribute vec3 vert_position;
-attribute vec2 vert_texCoord;
-
-// transformation matrices
-uniform mat4 modelViewProjection;
-
-varying vec2 geom_texCoord;
-
-void main() {
-    gl_Position = modelViewProjection * vec4(vert_position, 1.0);
-
-    geom_texCoord = vert_texCoord;
-}
-</script>
-<script id="fragmentShader" type="x-shader/x-fragment">
-precision highp float;
-
-uniform sampler2D texture1;
-
-varying vec2 geom_texCoord;
-
-void main() {
-    gl_FragColor = texture2D(texture1, geom_texCoord);
-}
-</script>
 </body>
 </html>

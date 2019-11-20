@@ -4,17 +4,18 @@ var xAxis = vec3.create(1, 0, 0);
 var yAxis = vec3.create(0, 1, 0);
 var zAxis = vec3.create(0, 0, 1);
 
+var loadingComplete = false;
+
 class Renderer {
     constructor(imageSources) {
         this.imageSources = imageSources;
         this.sceneTextures = [];
 
-        this.loadImages();
-        this.setupTextures();
+        this.startRendering();
     }
 
-    intializeWebGL() {
-        var gl = null;
+    initializeWebGl(canvas) {
+        let gl = null;
         try {
             gl = canvas[0].getContext("experimental-webgl");
             if (!gl) {
@@ -35,22 +36,20 @@ class Renderer {
         var shaderScript = $("#" + shaderScriptId);
         var shaderSource = shaderScript[0].text;
         var shaderType = null;
-
         if (shaderScript[0].type == "x-shader/x-vertex") {
             shaderType = gl.VERTEX_SHADER;
         } else if (shaderScript[0].type == "x-shader/x-fragment") {
             shaderType = gl.FRAGMENT_SHADER;
         } else {
-            throw new Error("Invalid shader type: " + shaderScript[0].type);
+            throw new Error("Invalid shader type: " + shaderScript[0].type)
         }
-
         var shader = gl.createShader(shaderType);
         gl.shaderSource(shader, shaderSource);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
             var infoLog = gl.getShaderInfoLog(shader);
             gl.deleteShader(shader);
-            throw new Error("An error occured compiling the shader: " + infoLog);
+            throw new Error("An error occurred compiling the shader: " + infoLog);
         } else {
             return shader;
         }
@@ -58,9 +57,18 @@ class Renderer {
 
     createGlslProgram(gl, vertexShaderId, fragmentShaderId) {
         var program = gl.createProgram();
-
-        gl.attachShader(program, createShader(gl, vertexShaderId));
-        gl.attachShader(program, createShader(fragmentShaderId));
+    
+        gl.attachShader(program, this.createShader(gl, vertexShaderId));
+        gl.attachShader(program, this.createShader(gl, fragmentShaderId));
+        gl.linkProgram(program);
+        gl.validateProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            var infoLog = gl.getProgramInfoLog(program);
+            gl.deleteProgram(program);
+            throw new Error("An error occurred linking the program: " + infoLog);
+        } else {
+            return program;
+        }
     }
 
     isPowerOfTwo(val) {
@@ -81,7 +89,7 @@ class Renderer {
         // Step 4: Download the image data to the GPU.
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         // Step 5: Creating a mipmap so that the texture can be anti-aliased.
-        if(isPowerOfTwo(image.width) && isPowerOfTwo(image.height)) {
+        if(this.isPowerOfTwo(image.width) && this.isPowerOfTwo(image.height)) {
             gl.generateMipmap(gl.TEXTURE_2D);
         }
         else {
@@ -244,9 +252,10 @@ class Renderer {
         program.mvp = gl.getUniformLocation(program, "modelViewProjection");
     }
 
+    // replaces setup of runwebgl
     startRendering() {
-        var gl = initializeWebGL($("#webglCanvas"));
-        var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
+        var gl = this.initializeWebGl($("#webglCanvas"));
+        var program = this.createGlslProgram(gl, "vertexShader", "fragmentShader");
 
         this.storeLocations(gl, program);
 
@@ -275,7 +284,9 @@ class Renderer {
             image.onload = () => {
                 loadedCount += 1;
                 if (loadedCount >= imageCount) {
-                    return setupTextures(gl, images);
+                    console.log("images loaded");
+                    loadingComplete = true;
+                    return this.setupTextures(gl, images);
                 }
             };
         }
@@ -299,7 +310,9 @@ class Renderer {
     }
 
     // formerly known as updateWebGL
-    drawScene(gl, scene) {
+    drawScene(scene) {
+        let gl = this.gl;
+
         let backgroundColor = vec4.fromValues(0.53, 0.81, 0.92, 1.0);
         gl.clearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
