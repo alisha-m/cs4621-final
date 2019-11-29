@@ -303,11 +303,12 @@ function run() {
     var lastTime = jQuery.now();
     var deltaTime = 0;
     function update() {
+        // don't start the update loop until the renderer is done loading
         if (!renderer.loadingComplete) {
-            console.log(renderer.loadingComplete);
             requestAnimationFrame(update);
             return;
         }
+
         // Step 1: Update the scene
         // START MAZE UPDATE
         if (mazeChanged) {
@@ -369,7 +370,7 @@ function run() {
         renderer.drawScene(scene);
 
         // Step 3: request that dank animation frame to do it all over again
-        requestAnimationFrame(update);
+        // requestAnimationFrame(update);
     }
 
     requestAnimationFrame(update);

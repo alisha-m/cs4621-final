@@ -4,7 +4,7 @@ var xAxis = vec3.create(1, 0, 0);
 var yAxis = vec3.create(0, 1, 0);
 var zAxis = vec3.create(0, 0, 1);
 
-class Renderer {
+class Renderer { 
     constructor(imageSources) {
         this.imageSources = imageSources;
         this.sceneTextures = [];
@@ -144,7 +144,7 @@ class Renderer {
 
     // former draw()
     drawShape(gl, program, shape, initialize) {
-        gl.useProgram(program);
+        // gl.useProgram(program);
 
         initialize();
 
@@ -159,7 +159,7 @@ class Renderer {
         gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-        gl.useProgram(null);
+        // gl.useProgram(null);
     }
 
     setupTexture(gl, program, texture, textureIdx) {
@@ -169,6 +169,7 @@ class Renderer {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // Step 3: Set the texture uniform to the "index" of the texture unit you just activated
         var textureLocation = gl.getUniformLocation(program, "texture1");
+
         gl.uniform1i(textureLocation, textureIdx);
     }
 
@@ -222,22 +223,18 @@ class Renderer {
         return projectionMatrix;
     }
 
-    getMVPMatrix(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
-        let modelMatrix = getModel(transform);
-        let viewMatrix = getView(camPos, camDir, camUp);
-        let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
+    getMVPMatrix(modelMatrix, viewMatrix, projectionMatrix) {
+        let mvpMatrix = mat4.create();
+        mat4.mul(mvpMatrix, mvpMatrix, projectionMatrix);
+        mat4.mul(mvpMatrix, mvpMatrix, viewMatrix);
+        mat4.mul(mvpMatrix, mvpMatrix, modelMatrix);
 
-        var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
-        
-        // TODO: Don't just assume this!
-        var mvpLocation = gl.getUniformLocation(program, "modelViewProjection");
-
-        gl.uniformMatrix4fv(mvpLocation, false, mvpMatrix);
+        return mvpMatrix;
     }
 
     updateMVPMatrix(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
         let modelMatrix = this.getModelMatrix(transform);
-        let viewMatrix = this.getView(camPos, camDir, camUp);
+        let viewMatrix = this.getViewMatrix(camPos, camDir, camUp);
         let projectionMatrix = this.getProjectionMatrix(fieldOfView, aspectRatio, near, far);
 
         let mvpMatrix = this.getMVPMatrix(modelMatrix, viewMatrix, projectionMatrix);
@@ -258,6 +255,7 @@ class Renderer {
     startRendering() {
         var gl = this.initializeWebGl($("#webglCanvas"));
         var program = this.createGlslProgram(gl, "vertexShader", "fragmentShader");
+        this.program = program;
 
         this.storeLocations(gl, program);
 
@@ -286,7 +284,6 @@ class Renderer {
             image.onload = () => {
                 loadedCount += 1;
                 if (loadedCount >= imageCount) {
-                    console.log("images loaded");
                     this.loadingComplete = true;
                     return this.setupTextures(gl, images);
                 }
@@ -303,7 +300,7 @@ class Renderer {
         }
         for (let i = 0; i < images.length; i++) {
             let sceneTexture = {
-                src: images.src,
+                src: images[i].src,
                 texture: this.loadTexture(gl, images[i], i + gl.TEXTURE0),
                 textureIdx: i
             };
@@ -314,6 +311,7 @@ class Renderer {
     // formerly known as updateWebGL
     drawScene(scene) {
         let gl = this.gl;
+        let program = this.program;
 
         let backgroundColor = vec4.fromValues(0.53, 0.81, 0.92, 1.0);
         gl.clearColor(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
@@ -326,10 +324,10 @@ class Renderer {
             for (let i = 0; i < scene.meshObjects.length; i++) {
                 let mesh = scene.meshObjects[i];
                 
-                let sceneTexture;
+                var sceneTexture;
                 // find the texture associated with this source lol
                 for (let j = 0; j < this.sceneTextures.length; j++) {
-                    if (this.sceneTextures[j].src == mesh.material.textureSrc) {
+                    if (this.sceneTextures[j].textureIdx == mesh.material.textureIdx) {
                         sceneTexture = this.sceneTextures[j];
                         break;
                     }
@@ -337,13 +335,14 @@ class Renderer {
                 let texture = sceneTexture.texture;
                 let textureIdx = sceneTexture.textureIdx;
                 
-                this.setupTexture(gl, program, texture, textureIdx + gl.TEXTURE0, textureIdx);
+                this.setupTexture(gl, program, texture, textureIdx);
 
-                let shape = createShape(gl, mesh.geometry);
+                let shape = this.createShape(gl, mesh.geometry);
+                console.log(shape);
 
                 let camPos = scene.camera.transform.position;
                 // TODO: Include more rotations than just the z axis lol
-                let camDir = vec3.fromValues(Math.cos(scene.camera.rotation[2]), Math.sin(scene.camera.rotation[2], 0));
+                let camDir = vec3.fromValues(Math.cos(scene.camera.transform.rotation[2]), Math.sin(scene.camera.transform.rotation[2], 0));
                 let camUp = vec3.fromValues(1, 1, 1);
 
                 let fov = scene.camera.fieldOfView;
@@ -351,7 +350,7 @@ class Renderer {
                 let near = scene.camera.near;
                 let far = scene.camera.far;
 
-                updateMVPMatrix(
+                this.updateMVPMatrix(
                     gl, program,
                     mesh.transform,
                     camPos, camDir, camUp,
