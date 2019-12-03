@@ -2,6 +2,12 @@ div#main {
     padding-top: 60px;
     font-size: 15px;
 }
+body {
+    background-color: #416788;
+    color: #D5E4F2;
+    text-align: center;
+}
+
 h1 {
     font-size: 45px;
     font-weight: 600;
@@ -23,10 +29,11 @@ h2 {
     margin-bottom: 2ex;
 }
 h3 {
-    font-size: 18px;
-    margin-top: 2ex;
-    margin-bottom: 1ex;
+    font-size: 19px;
+    margin-top: 1ex;
+    margin-bottom: 5ex;
 }
+
 a.accordion-toggle h3 {
     color: black;
 }

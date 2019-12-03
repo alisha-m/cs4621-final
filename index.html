@@ -24,10 +24,20 @@
 <body>
 <div class="container">
     <h1>CS 4621 Final <span class="subtitle">Terrain Generator</span></h1>
-    <div align="center">
-        <canvas tabindex="1" id="webglCanvas" style="border: none; background-color: black;" width="800" height="600"></canvas>
+    <div>
+        <canvas id="webglCanvas" style="border: none; background-color: black;" width="1200" height="900"></canvas>
     </div>
 
+    <h2>For our final project, we recreated a scene from "Avatar" using procedural world generation. The user
+      is free to explore using the arrow keys.
+    </h2>
+
+    <h3>Alexander DeGraff (ard96) &middot
+        Alisha Mithal (am2658) &middot
+        Stephen Newcomb (sn498) &middot
+        Jake Sanders (jas222) &middot
+        Janie Walters (jjw249)
+    </h3>
     <table class="table table-bordered">
         <tr>
             <td align="right"><b>Field of view:</b></td>
@@ -58,6 +68,20 @@
     </table>
 </div>
 
+<script>
+    $(function(){
+        InitContext();
+    });
+    function InitContext()
+    {
+      var $canvasDiv = $('#container');
+
+      var canvas = document.getElementById("webglCanvas");
+        canvas.height = $canvasDiv.innerHeight();
+        canvas.width = $canvasDiv.innerWidth();
+    }
+</script>
+
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="js/jquery-3.1.1.min.js"></script>
 <script src="js/jquery-ui.min.js"></script>
@@ -68,25 +92,25 @@
 <script id="vertexShader" type="x-shader/x-vertex">
     attribute vec3 vert_position;
     attribute vec2 vert_texCoord;
-    
+
     // transformation matrices
     uniform mat4 modelViewProjection;
-    
+
     varying vec2 geom_texCoord;
-    
+
     void main() {
         gl_Position = modelViewProjection * vec4(vert_position, 1.0);
-    
+
         geom_texCoord = vert_texCoord;
     }
     </script>
     <script id="fragmentShader" type="x-shader/x-fragment">
     precision highp float;
-    
+
     uniform sampler2D texture1;
-    
+
     varying vec2 geom_texCoord;
-    
+
     void main() {
         gl_FragColor = texture2D(texture1, geom_texCoord);
     }
