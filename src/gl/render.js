@@ -239,6 +239,8 @@ class Renderer {
 
         let mvpMatrix = this.getMVPMatrix(modelMatrix, viewMatrix, projectionMatrix);
 
+        console.log(mvpMatrix);
+
         let mvpLocation = gl.getUniformLocation(program, "modelViewProjection");
 
         gl.uniformMatrix4fv(mvpLocation, false, mvpMatrix);
@@ -285,6 +287,7 @@ class Renderer {
                 loadedCount += 1;
                 if (loadedCount >= imageCount) {
                     this.loadingComplete = true;
+                    console.log("Images loaded");
                     return this.setupTextures(gl, images);
                 }
             };
@@ -321,6 +324,8 @@ class Renderer {
         // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         if (gl.getUniformLocation(program, "texture1") != null) {
+            console.log(scene.camera);
+            
             for (let i = 0; i < scene.meshObjects.length; i++) {
                 let mesh = scene.meshObjects[i];
                 
@@ -338,11 +343,10 @@ class Renderer {
                 this.setupTexture(gl, program, texture, textureIdx);
 
                 let shape = this.createShape(gl, mesh.geometry);
-                console.log(shape);
 
-                let camPos = scene.camera.transform.position;
+                let camPos = vec3.fromValues(1.5, 1.5, 9.5);
                 // TODO: Include more rotations than just the z axis lol
-                let camDir = vec3.fromValues(Math.cos(scene.camera.transform.rotation[2]), Math.sin(scene.camera.transform.rotation[2], 0));
+                let camDir = vec3.fromValues(0, Math.PI / 2, 0);
                 let camUp = vec3.fromValues(1, 1, 1);
 
                 let fov = scene.camera.fieldOfView;
