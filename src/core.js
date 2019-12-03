@@ -1,200 +1,4 @@
 var canvas = document.getElementById("webglCanvas");
-var mazeChanged = false;
-
-$("#fovSpinner").spinner({
-    min: 10.0,
-    max: 80.0,
-    step: 0.1
-});
-$("#eyeHeightSpinner").spinner({
-    min: 0.1,
-    max: 1.0,
-    step:0.01
-});
-
-function getFov() {
-    return $("#fovSpinner").spinner("value") * Math.PI / 180.0;
-}
-
-function getEyeHeight() {
-    return $("#eyeHeightSpinner").spinner("value");
-}
-
-function getMazeStrings() {
-    return $("#mazeTextArea").val().trim().split(/\s/);
-}
-
-function createMazeFromStrings(strings) {
-    var sizeY = strings.length;
-    var sizeX = strings[0].length;
-
-    var x, y;
-    for(y=0;y<sizeY;y++) {
-        if (strings[y].length != sizeX) {
-            throw new Error("Mesh is not a rectangle!");
-        }
-    }
-
-    var data = [];
-    for (x = 0; x < sizeX; x++) {
-        var a = [];
-        for (y = 0; y < sizeY; y++) {
-            a.push(null);
-        }
-        data.push(a);
-    }
-
-    var startPosition = null;
-    var startHeading = null;
-    for (x = 0; x < sizeX; x++) {
-        for (y = 0; y < sizeY; y++) {
-            var c = strings[sizeY - y - 1][x];
-            if (c == "#") {
-                data[x][y] = 1;
-            } else {
-                data[x][y] = 0;
-            }
-
-            if (c == "N" || c == "E" || c == "W" || c == "S") {
-                if (startPosition == null) {
-                    if (c == "N") {
-                        startHeading = Math.PI / 2;
-                    } else if (c == "E") {
-                        startHeading = 0.0;
-                    } else if (c == "W") {
-                        startHeading = Math.PI;
-                    } else if (c == "S") {
-                        startHeading = 3 * Math.PI / 2;
-                    }
-                    startPosition = [x, y];
-                } else {
-                    throw new Error("There are more than one starting point!");
-                }
-            }
-        }
-    }
-
-    if (startPosition == null) {
-        throw new Error("There is no starting point!");
-    }
-
-    for(x=0;x<sizeX;x++) {
-        if (data[x][0] != 1) {
-            throw new Error("Boundary is not complete!");
-        }
-        if (data[x][sizeY-1] != 1) {
-            throw new Error("Boundary is not complete!");
-        }
-    }
-    for(y=0;y<sizeY;y++) {
-        if (data[0][y] != 1) {
-            throw new Error("Boundary is not complete!");
-        }
-        if (data[sizeX-1][y] != 1) {
-            throw new Error("Boundary is not complete!");
-        }
-    }
-
-    return {
-        sizeX: sizeX,
-        sizeY: sizeY,
-        data: data,
-        startHeading: startHeading,
-        startPosition: startPosition
-    };
-}
-
-function mazeToWorld(mazePos) {
-    return vec3.fromValues(mazePos[0] + 0.5, mazePos[1] + 0.5, getEyeHeight());
-}
-
-function worldToMaze(worldPos) {
-    return vec2.fromValues(Math.floor(worldPos[0]), Math.floor(worldPos[1]));
-}
-
-var maze = null;
-var targetPos = null;
-var targetHeading = 0;
-function updateMaze() {
-    maze = createMazeFromStrings(getMazeStrings());
-    targetPos = mazeToWorld(maze.startPosition);
-    targetHeading = maze.startHeading;
-    return constructMaze();
-}
-
-// construct the 3D meshes of the maze
-function constructMaze() {
-    let wallMeshes = [];
-    let floorMeshes = [];
-
-    let width = 1;
-    let height = 1;
-
-    // rotations to get floor to wall orientation
-    let leftRotation = vec3.fromValues(0, Math.PI / 2, 0);
-    let rightRotation = vec3.fromValues(0, -Math.PI / 2, 0);
-    let topRotation = vec3.fromValues(-Math.PI / 2, 0, 0);
-    let bottomRotation = vec3.fromValues(Math.PI / 2, 0,  0);
-
-    // floor rotation is just not rotating at all
-    let floorRotation = vec3.fromValues(0, 0, 0);
-
-    for (let i = 0; i < maze.sizeX; i++) {
-        for (let j = 0; j < maze.sizeY; j++) {
-            let isWall = maze.data[i][j] == 1;
-            
-            let left = i;
-            let right = i + 1;
-            let top = j + 1;
-            let bottom = j;
-
-            let centerX = i + 0.5;
-            let centerY = j + 0.5;
-
-            let floorZ = 0;
-            let wallZ = 0.5;
-
-            if (isWall) {
-                // construct wall tile(s) here
-                // contstruct a wall in every direction that has a free tile in it
-                let drawLeft = i != 0 && maze.data[i-1][j] == 0;
-                let drawRight = i != maze.sizeX - 1 && maze.data[i+1][j] == 0;
-                let drawBottom = j != 0 && maze.data[i][j-1] == 0;
-                let drawTop = j != maze.sizeY - 1 && maze.data[i][j+1] == 0;
-
-                if (drawLeft) {
-                    let leftWallCenter = vec3.fromValues(left, centerY, wallZ); 
-                    let leftWallShapeData = getQuadMesh(leftWallCenter, leftRotation, width, height);
-                    wallMeshes.push(leftWallShapeData);
-                }
-                if (drawRight) {
-                    let rightWallCenter = vec3.fromValues(right, centerY, wallZ);
-                    let rightWallShapeData = getQuadMesh(rightWallCenter, rightRotation, width, height);
-                    wallMeshes.push(rightWallShapeData);
-                }
-                if (drawBottom) {
-                    let bottomWallCenter = vec3.fromValues(centerX, bottom, wallZ);
-                    let bottomWallShapeData = getQuadMesh(bottomWallCenter, bottomRotation, width, height);
-                    wallMeshes.push(bottomWallShapeData);
-                }
-                if (drawTop) {
-                    let topWallCenter = vec3.fromValues(centerX, top, wallZ);
-                    let topWallShapeData = getQuadMesh(topWallCenter, topRotation, width, height);
-                    wallMeshes.push(topWallShapeData);
-                }
-            } else {
-                let floorCenter = vec3.fromValues(centerX, centerY, floorZ);
-                let floorShapeData = getQuadMesh(floorCenter, floorRotation, width, height);
-                floorMeshes.push(floorShapeData);
-            }
-        }
-    }
-
-    return {
-        wallMeshes: wallMeshes,
-        floorMeshes: floorMeshes
-    };
-}
 
 function initializeWebGL(canvas) {
     var gl = null;
@@ -474,46 +278,17 @@ function storeLocations(gl, program) {
     program.mvp = gl.getUniformLocation(program, "modelViewProjection");
 }
 
-// 0.25 sec = 250 ms
-const ANIMATION_DURATION = 250.0;
-
-function getDirection(h){
-    return vec3.fromValues(Math.cos(h), Math.sin(h), 0);
-}
-
 function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-function isWalkable(targetMazePos) {
-    if (targetMazePos[0] < 0 || targetMazePos[0] > maze.sizeX 
-        || targetMazePos[1] < 0 || targetMazePos[1] > maze.sizeY) {
-        
-        return false;
-    }
-
-    return (maze.data[Math.ceil(targetMazePos[0])][Math.ceil(targetMazePos[1])] != 1);
-}
-
-function limitAngle(h){
-    while(h < 0){
-        h += 2 * Math.PI;
-    }
-    while(h >= 2 * Math.PI){
-        h -= 2 * Math.PI;
-    }
-
-    return h;
-}
-
 // give camera default values for now
 var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
-var camera = new Camera("Maze Camera", camTransform, getFov(), 800/600, 0.1, 100);
+var camera = new Camera("Main Camera", camTransform, Math.PI / 2, 800/600, 0.1, 100);
 var scene = new Scene(camera);
 
 function startWebGL() {
     // create image data structures
-
     var floorImage = new Image();
     floorImage.crossOrigin = "anonymous";
     floorImage.src = "data/floor.jpg";
@@ -525,15 +300,13 @@ function startWebGL() {
         scene.images.floorImage = floorImage;
         scene.images.wallImage = wallImage;
 
-
         runWebGL();
     }
 
     wallImage.src = "data/wall.jpg";
 }
 
-var turning = false;
-var moving = false;
+
 var timeElapsed = 0;
 function runWebGL() {
     var gl = initializeWebGL($("#webglCanvas"));
@@ -553,102 +326,32 @@ function runWebGL() {
     let wallImage = scene.images.wallImage;
     var floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
     var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
-
-    // get the vertex datas for the maze
-    var mazeMeshes = updateMaze();
-    var wallMeshes = mazeMeshes.wallMeshes;
-    var floorMeshes = mazeMeshes.floorMeshes;
-    
-    // make scene objects for walls and floors
-    for (let i = 0; i < wallMeshes.length; i++) {
-        wallMeshes[i].material.texture = wallTexture;
-        scene.addSceneObject(wallMeshes[i]);
-    }
-    for (let i = 0; i < floorMeshes.length; i++) {
-        floorMeshes[i].material.texture = floorTexture;
-        scene.addSceneObject(floorMeshes[i]);
-    }
-
     
     // make camera and add it to the scene
-    let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
-    let camDir = vec3.fromValues(1, 0, 0);
-    vec3.rotateZ(camDir, camDir, vec3.create(), maze.startHeading);
-    let testCamUp = vec3.fromValues(0, 0, 1);
-
-    let fov = getFov();
+    let fov = Math.PI / 2;
     let aspectRatio = canvas.width / canvas.height;
     let near = 0.1;
     let far = 100;
 
-    let camTransform = new Transform(mazeToWorld(maze.startPosition), vec3.fromValues(0, maze.startHeading, 0));
-    scene.camera = new Camera("Maze Camera", camTransform, fov, aspectRatio, near, far);
+    let camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
+    scene.camera = new Camera("Main Camera", camTransform, fov, aspectRatio, near, far);
     
+    // ADD STUFF TO SCENE
+    let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
+
+    quad.material.texture = floorTexture;
+    scene.addSceneObject(quad);
+    // STOP ADDING STUFF TO THE SCENE
+
     // setup time stuff
     var lastTime = jQuery.now();
     var deltaTime = 0;
     function updateWebGl() {
         gl.clearColor(0.53, 0.81, 0.92, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        scene.camera.transform.position[2] = getEyeHeight();
-
-        fov = getFov();
-
-        if (mazeChanged) {
-            mazeChanged = false;
-            // setup maze again
-            meshData = updateMaze();
-            wallMeshes = meshData.wallMeshes;
-            floorMeshes = meshData.floorMeshes;
-
-            scene.removeAllSceneObjects();
-
-            for (let i = 0; i < wallMeshes.length; i++) {
-                wallMeshes[i].material.texture = wallTexture;
-                scene.addSceneObject(wallMeshes[i]);
-            }
-            for (let i = 0; i < floorMeshes.length; i++) {
-                floorMeshes[i].material.texture = floorTexture;
-                scene.addSceneObject(floorMeshes[i]);
-            }
-
-            // put the camera in the default pos
-            scene.camera.transform.position = targetPos;
-            scene.camera.transform.rotation = vec3.fromValues(0, targetHeading, 0);
-        }
         
-        // START CAMERA UPDATE STUFF
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
-
-        // update camera heading
-        if (turning) {
-            timeElapsed += deltaTime;
-            if (timeElapsed > ANIMATION_DURATION) {
-                turning = false;
-                timeElapsed = 0;
-
-                scene.camera.transform.rotation[1] = targetHeading;
-            } else {
-                scene.camera.transform.rotation[1] = lerpf(scene.camera.transform.rotation[1], targetHeading, timeElapsed / ANIMATION_DURATION);
-            }
-        }
-        // update camera position
-        if (moving) {
-            timeElapsed += deltaTime;
-            if (timeElapsed > ANIMATION_DURATION) {
-                moving = false;
-                timeElapsed = 0;
-
-                scene.camera.transform.position = targetPos;
-            } else {
-                // vec3.lerp(camera.position, camera.position, targetPos, timeElapsed / ANIMATION_DURATION);
-                scene.camera.transform.position[0] = lerpf(scene.camera.transform.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
-                
-            }
-        }
-        // STOP CAMERA UPDATE STUFF
 
         // draw all scene objects
         // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
@@ -662,75 +365,23 @@ function runWebGL() {
                 }
 
                 // TODO: Don't assume that you're drawing a quad
-                let quad = createShape(gl, mesh.geometry);
+                let shape = createShape(gl, mesh.geometry);
 
                 updateMVP(
                     gl, program,
                     mesh.transform,
-                    scene.camera.transform.position, getDirection(scene.camera.transform.rotation[1]), testCamUp,
+                    scene.camera.transform.position, scene.camera.defaultCamDir, scene.camera.camUp,
                     fov, aspectRatio, near, far
                 );
 
-                draw(gl, program, quad, () => {});
+                draw(gl, program, shape, () => {});
             }
         }
 
-        requestAnimationFrame(updateWebGl);
+        // requestAnimationFrame(updateWebGl);
     }
 
     requestAnimationFrame(updateWebGl);
 }
 
 startWebGL();
-
-// "MAIN" CODE HERE
-$("#updateMazeButton").click(() => {
-    mazeChanged = true;
-});
-
-$("#webglCanvas").keydown(function (event) {
-    // TODO: Edit this so that the crawler responds to the arrow keys.
-    if(turning) {
-        return;
-    }
-
-    if (event.which == 37 && !turning && !turning) { //arrow left, turn left
-        turning = true;
-        targetHeading += Math.PI / 2;
-    }
-    else if (event.which == 38 && !moving && !turning) { //arrow up, move up
-        let currentMazePos = worldToMaze(scene.camera.transform.position);
-        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1]), Math.sin(scene.camera.transform.rotation[1]));        
-
-        let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
-        vec2.add(targetMazePos, targetMazePos, moveAmount);
-
-        if (isWalkable(targetMazePos)) {
-            moving = true;
-            targetPos = mazeToWorld(targetMazePos);
-        }
-    }
-    else if (event.which == 39 && !turning && !moving){ //arrow right
-        turning = true;
-        targetHeading -= Math.PI / 2;
-    }
-    else if (event.which == 40 && !moving && !turning){ //arrow down
-        let currentMazePos = worldToMaze(scene.camera.transform.position);
-        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1] + Math.PI), Math.sin(scene.camera.transform.rotation[1] + Math.PI));        
-
-        let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
-        vec2.add(targetMazePos, targetMazePos, moveAmount);
-
-        if (isWalkable(targetMazePos)) {
-            moving = true;
-            targetPos = mazeToWorld(targetMazePos);
-        }
-    } 
-});
-// TODO: Your code here.
-window.addEventListener("keydown", function(e) {
-    // space and arrow keys
-    if([32, 37, 38, 39, 40].indexOf(e.keyCode) > -1) {
-        e.preventDefault();
-    }
-}, false);

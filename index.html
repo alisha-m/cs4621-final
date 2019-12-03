@@ -38,49 +38,7 @@
         Jake Sanders (jas222) &middot
         Janie Walters (jjw249)
     </h3>
-    <table class="table table-bordered">
-        <tr>
-            <td align="right"><b>Field of view:</b></td>
-            <td>
-                <input type="text" id="fovSpinner" value="80.0">
-            </td>
-        </tr>
-        <tr>
-            <td align="right"><b>Eye height:</b></td>
-            <td>
-                <input type="text" id="eyeHeightSpinner" value="0.5">
-            </td>
-        </tr>
-        <tr>
-            <td align="right"><b>Maze:</b></td>
-            <td>
-                <textarea style="font-family: monospace" id="mazeTextArea" cols="25" rows="10">
-#####
-#...#
-#.#.#
-#N..#
-#####
-</textarea>
-                <br>
-                <button id="updateMazeButton">Update Maze</button>
-            </td>
-        </tr>
-    </table>
 </div>
-
-<script>
-    $(function(){
-        InitContext();
-    });
-    function InitContext()
-    {
-      var $canvasDiv = $('#container');
-
-      var canvas = document.getElementById("webglCanvas");
-        canvas.height = $canvasDiv.innerHeight();
-        canvas.width = $canvasDiv.innerWidth();
-    }
-</script>
 
 <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
 <script src="js/jquery-3.1.1.min.js"></script>
@@ -124,7 +82,7 @@
 <script src="src/Scene/camera.js"></script>
 <script src="src/Scene/mesh-object.js"></script>
 <script src="src/Scene/scene.js"></script>
-<script src="src/gl/render.js"></script>
+<!-- <script src="src/gl/render.js"></script> -->
 <script src="src/core.js"></script>
 <!-- <script src="src/maze-core.js"></script> -->
 <!-- <script src="src/test-core.js"></script> -->
