@@ -271,7 +271,7 @@ function run() {
 
     // make camera and scene
     let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
-    let camDir = vec3.fromValues(1, 0, 0);
+    let camDir = vec3.clone(scene.camera.defaultCamDir);
     vec3.rotateZ(camDir, camDir, vec3.create(), maze.startHeading);
     let camUp = vec3.fromValues(0, 0, 1);
 
