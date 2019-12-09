@@ -595,7 +595,6 @@ function startWebGL() {
 function runWebGL(queue) {
     var gl = initializeWebGL($("#webglCanvas"));
     var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
-    // var landProgram = createGlslProgram(gl, "vertexShaderLand", "fragmentShaderLand");
 
     storeLocations(gl, program);
 
