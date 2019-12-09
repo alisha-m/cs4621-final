@@ -545,31 +545,47 @@ function getProjection(camera) {
     return projectionMatrix;
 }
 
-function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
-    let mvpMatrix = mat4.create();
-    mat4.multiply(mvpMatrix, mvpMatrix, projectionMatrix);
-    mat4.multiply(mvpMatrix, mvpMatrix, viewMatrix);
-    mat4.multiply(mvpMatrix, mvpMatrix, modelMatrix);
-
-    return mvpMatrix;
+function getNormalMatrix(model, view) {
+    let normalMat = mat4.create();
+    mat4.mul(normalMat, view, model);
+    mat4.invert(normalMat, normalMat);
+    mat4.transpose(normalMat, normalMat);
+    return normalMat;
 }
+
+// function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
+//     let mvpMatrix = mat4.create();
+//     mat4.multiply(mvpMatrix, mvpMatrix, projectionMatrix);
+//     mat4.multiply(mvpMatrix, mvpMatrix, viewMatrix);
+//     mat4.multiply(mvpMatrix, mvpMatrix, modelMatrix);
+
+//     return mvpMatrix;
+// }
 
 function updateMVP(gl, program, transform, camera) {
     let modelMatrix = getModel(transform);
     let viewMatrix = getView(camera);
     let projectionMatrix = getProjection(camera);
+    let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
 
-    var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
+    var modelLocation = gl.getUniformLocation(program, "model");
+    var viewLocation = gl.getUniformLocation(program, "view");
+    var projectionLocation = gl.getUniformLocation(program, "projection");
+    var normalMatLocation = gl.getUniformLocation(program, "normalMat");
 
-    var mvpLocation = gl.getUniformLocation(program, "modelViewProjection");
-
-    gl.uniformMatrix4fv(mvpLocation, false, mvpMatrix);
+    gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
+    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+    gl.uniformMatrix4fv(normalMatLocation, false, normalMatrix);
 }
 
 function storeLocations(gl, program) {
     program.vert_position = gl.getAttribLocation(program, "vert_position");
     program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
-    program.mvp = gl.getUniformLocation(program, "modelViewProjection");
+    program.model = gl.getUniformLocation(program, "model");
+    program.view = gl.getUniformLocation(program, "view");
+    program.projection = gl.getUniformLocation(program, "projection");
+    program.normalMat = gl.getUniformLocation(program, "normalMat");
 }
 
 function lerpf(a, b, t) {
@@ -801,7 +817,7 @@ if (event.which == 65 || event.which == 37) { //a or left arrow, move left
   vec3.copy(dir,scene.camera.defaultCamDir);
   vec3.cross(dir, dir, scene.camera.camUp);
   vec3.scale(moveAmount, dir, speed);
-  vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+//   vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 }
 if (event.which == 68 || event.which == 39) { //d or right arrow, move right
   let dir = vec3.create();
@@ -809,6 +825,6 @@ if (event.which == 68 || event.which == 39) { //d or right arrow, move right
   console.log(dir);
   vec3.cross(dir, dir, scene.camera.camUp);
   vec3.scale(moveAmount, dir, speed);
-  vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+//   vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 }
 },false);

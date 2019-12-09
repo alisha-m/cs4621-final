@@ -52,21 +52,85 @@ attribute vec3 vert_position;
 attribute vec3 vert_normal;
 attribute vec2 vert_texCoord;
 
-  // transformation matrices
-  uniform mat4 modelViewProjection;
+// transformation matrices
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+uniform mat4 normalMat;
 
-varying vec4 geom_normal;
+varying vec4 geom_position;
+varying vec3 geom_normal;
 varying vec2 geom_texCoord;
 
-  void main() {
-      gl_Position = modelViewProjection * vec4(vert_position, 1.0);
+void main() {
+    gl_Position = projection * view * model * vec4(vert_position, 1.0);
 
-      geom_normal = vec4(vert_normal, 1.0);
-      geom_texCoord = vert_texCoord;
-  }
+    geom_position = view * model * vec4(vert_position, 1.0);
+    geom_normal = normalize(view * model * vec4(vert_normal, 1.0)).xyz;
+    geom_texCoord = vert_texCoord;
+}
 </script>
 
 <script id="fragmentShader" type="x-shader/x-fragment">
+// /*
+    precision highp float;
+
+    uniform sampler2D texture1;
+
+    varying vec4 geom_position;
+    varying vec3 geom_normal;
+    varying vec2 geom_texCoord;
+    
+    vec3 to_sRGB(vec3 c) { return pow(c, vec3(1.0/2.2)); }
+    vec3 from_sRGB(vec3 c) { return pow(c, vec3(2.2)); }
+    
+    void main() {
+        const int NUM_LIGHTS = 2;
+
+        vec3 lightColors[2];
+        lightColors[0] = vec3(0.5, 0.5, 0.5);
+        lightColors[1] = vec3(100.0, 0.0, 0.0);
+
+        vec3 lightPositions[2];
+        lightPositions[0] = vec3(0.0, 0.0, 10.0);
+        lightPositions[1] = vec3(0.0, 0.0, 10.0);
+    
+        float exposure = 1.0;
+        float roughness = 0.5; // = 1.0 / roughness
+
+        // interpolating normals will change the length of the normal, so renormalize the normal.
+        vec3 N = normalize(geom_normal);
+        vec3 V = normalize(-geom_position.xyz);
+        
+        vec3 finalColor = vec3(0.0, 0.0, 0.0);
+    
+        for (int i = 0; i < NUM_LIGHTS; i++) {
+            float r = length(lightPositions[i] - geom_position.xyz);
+            vec3 L = normalize(lightPositions[i] - geom_position.xyz); 
+            vec3 H = normalize(L + V);
+    
+            // calculate diffuse term
+            vec3 Idiff = from_sRGB(texture2D(texture1, geom_texCoord).rgb) * max(dot(N, L), 0.0);
+    
+            // calculate specular term
+            vec3 Ispec = vec3(1.0) * pow(max(dot(N, H), 0.0), 1.0 / roughness);
+    
+            finalColor += lightColors[i] * (Idiff + Ispec) / (r*r);
+        }
+
+        finalColor += vec3(0.05, 0.05, 0.05);
+        
+        // Only shade if facing the light
+        // Color the back faces an identifiable color
+        if (gl_FrontFacing) {
+            gl_FragColor = vec4(to_sRGB(finalColor * exposure), 1.0); 
+        } else {
+            gl_FragColor = vec4(170.0/255.0, 160.0/255.0, 0.0, 1.0); 
+        }
+    }
+// */    
+
+ /*
   precision highp float;
 
   uniform sampler2D texture1;
@@ -76,6 +140,7 @@ varying vec2 geom_texCoord;
   void main() {
       gl_FragColor = texture2D(texture1, geom_texCoord);
   }
+ */
 </script>
 
 <script id="vertexShaderSkyBox" type="x-shader/x-vertex">
