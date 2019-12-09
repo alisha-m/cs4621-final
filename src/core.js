@@ -411,13 +411,16 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
+function doCubeMarchingStuff() {
+    let cubeMarhcer = new MarchingCubes();
+}
+
 // Give camera default values for now
 var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
 var camera = new Camera("Main Camera", camTransform, Math.PI / 2, 800/600, 0.1, 100);
 var scene = new Scene(camera);
 
 window.addEventListener("keydown", function (event) {
-  console.log(scene);
   let speed = 0.4;
   if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
     scene.camera.goForward(speed);
@@ -463,6 +466,10 @@ function startWebGL() {
 }
 
 function runWebGL(queue) {
+    // BEGIN CUBE MARCHING
+    doCubeMarchingStuff();
+    // END CUBE MARCHING
+
     var gl = initializeWebGL($("#webglCanvas"));
     var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
 
@@ -608,7 +615,6 @@ function runWebGL(queue) {
 startWebGL();
 
 window.addEventListener("keydown", function (event) {
-  console.log(scene);
   let speed = 0.1;
   let currentPos = scene.camera.transform.position;
   let moveAmount = vec3.create();
@@ -632,7 +638,6 @@ if (event.which == 65 || event.which == 37) { //a or left arrow, move left
 if (event.which == 68 || event.which == 39) { //d or right arrow, move right
   let dir = vec3.create();
   vec3.copy(dir,scene.camera.defaultCamDir);
-  console.log(dir);
   vec3.cross(dir, dir, scene.camera.camUp);
   vec3.scale(moveAmount, dir, speed);
   vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
