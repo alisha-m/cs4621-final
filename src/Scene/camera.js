@@ -25,26 +25,27 @@ class Camera extends SceneObject {
         return camDir;
     }
 
-    turnRight(speed) {
-      this.currentHeading += 0.1;
+    turnRight(turnSpeed) {
+      this.currentHeading -= turnSpeed;
       // Bound the angle
       if(this.currentHeading >= Math.PI * 2.0) {
         this.currentHeading -= Math.PI * 2.0;
       } else if(this.currentHeading <= 0) {
         this.currentHeading += Math.PI * 2.0;
       }
-      this.transform.rotation = vec3.fromValues(Math.sin(this.currentHeading), 0, Math.cos(this.currentHeading));
+
+      this.transform.rotation = vec3.fromValues(0, 0, this.currentHeading);
     }
 
-    turnLeft(speed) {
-      this.currentHeading -= 0.1;
+    turnLeft(turnSpeed) {
+      this.currentHeading += turnSpeed;
       // Bound the angle
       if(this.currentHeading >= Math.PI * 2.0) {
         this.currentHeading -= Math.PI * 2.0;
       } else if(this.currentHeading <= 0) {
         this.currentHeading += Math.PI * 2.0;
       }
-      this.transform.rotation = vec3.fromValues(Math.sin(this.currentHeading), 0, Math.cos(this.currentHeading));
+      this.transform.rotation = vec3.fromValues(0, 0, this.currentHeading);
     }
 
     goForward(speed) {

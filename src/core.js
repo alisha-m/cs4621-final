@@ -598,11 +598,12 @@ function doCubeMarchingStuff() {
 
 // Give camera default values for now
 var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
-var camera = new Camera("Main Camera", camTransform, Math.PI / 2, 800/600, 0.1, 100);
+var camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
 var scene = new Scene(camera);
 
 window.addEventListener("keydown", function (event) {
   let speed = 0.4;
+  let turnSpeed = 0.05;
   if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
     scene.camera.goForward(speed);
   }
@@ -610,10 +611,10 @@ window.addEventListener("keydown", function (event) {
     scene.camera.goBackward(speed);
   }
   if (event.which == 65 || event.which == 37) { //a or left arrow, move left
-    scene.camera.turnLeft(speed);
+    scene.camera.turnLeft(turnSpeed);
   }
   if (event.which == 68 || event.which == 39) { //d or right arrow, move right
-    scene.camera.turnRight(speed);
+    scene.camera.turnRight(turnSpeed);
   }
 },false);
 
@@ -701,7 +702,7 @@ function runWebGL(queue) {
     var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
 
     // make camera and add it to the scene
-    let fov = Math.PI / 2;
+    let fov = Math.PI / 4;
     let aspectRatio = canvas.width / canvas.height;
     let near = 0.1;
     let far = 100;
