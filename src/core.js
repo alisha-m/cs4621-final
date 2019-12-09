@@ -194,7 +194,11 @@ function getNormal(vert1, vert2, vert3) {
 }
 
 function getHeight(x, y) {
+<<<<<<< HEAD
     return 5 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
+=======
+    return 0.1* noise.simplex2(x / 10, y / 10);
+>>>>>>> ed678cd2eae43b74e2beaf2d296e0353ec0628b3
 }
 
 function makeSurface(width, numDivisions, center) {
@@ -213,7 +217,7 @@ function makeSurface(width, numDivisions, center) {
     //         var xCoord = center.x + (x * space);
     //         var yCoord = center.y + (y * space);
     //         geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
-            
+
     //         if(x != 0 && y != 0) {
     //             var bottomLeft = (x - 1) * numDivisions + (y - 1);
     //             var bottomRight = x * numDivisions + (y - 1);
@@ -223,11 +227,11 @@ function makeSurface(width, numDivisions, center) {
     //             var firstNormal = 2 * ((x - 1) * numDivisions + (y - 1));
     //             var secondNormal = firstNormal + 1;
 
-    //             geom.normals.push(getNormal(geom.vertices[bottomLeft], 
-    //                                         geom.vertices[bottomRight], 
+    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
+    //                                         geom.vertices[bottomRight],
     //                                         geom.vertices[topRight]));
-    //             geom.normals.push(getNormal(geom.vertices[bottomLeft], 
-    //                                         geom.vertices[topRight], 
+    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
+    //                                         geom.vertices[topRight],
     //                                         geom.vertices[topLeft]));
 
     //             var lowerFace = new Face();
@@ -288,8 +292,12 @@ function makeSurface(width, numDivisions, center) {
             geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
             // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
             geom.uvs.push(vec2.fromValues(x % 2, y % 2));
+<<<<<<< HEAD
             facetedNormals[x].push([]);
             
+=======
+
+>>>>>>> ed678cd2eae43b74e2beaf2d296e0353ec0628b3
             if(x != 0 && y != 0) {
                 let bottomLeft = (x - 1) * numDivisions + (y - 1);
                 let bottomRight = x * numDivisions + (y - 1);
@@ -762,6 +770,7 @@ function runWebGL(queue) {
                 // TODO: Don't assume that you're drawing a quad
                 let shape = createShape(gl, mesh.geometry);
 
+                scene.camera.landHeight = getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
                 updateMVP(
                     gl, program,
                     mesh.transform,
