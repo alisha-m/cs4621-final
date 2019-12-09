@@ -397,19 +397,19 @@ function getModel(transform) {
     return M;
 }
 
-function getView(camPos, camDir, camUp) {
+function getView(camera) {
     let lookPoint = vec3.create();
-    vec3.add(lookPoint, camPos, camDir);
+    vec3.add(lookPoint, camera.transform.position, camera.getCamDir());
 
     let viewMatrix = mat4.create();
-    mat4.lookAt(viewMatrix, camPos, lookPoint, camUp);
+    mat4.lookAt(viewMatrix, camera.transform.position, lookPoint, camera.camUp);
 
     return viewMatrix;
 }
 
-function getProjection(fieldOfView, aspectRatio, near, far) {
+function getProjection(camera) {
     let projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, fieldOfView, aspectRatio, near, far);
+    mat4.perspective(projectionMatrix, camera.fieldOfView, camera.aspectRatio, camera.near, camera.far);
 
     return projectionMatrix;
 }
@@ -423,10 +423,10 @@ function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
     return mvpMatrix;
 }
 
-function updateMVP(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+function updateMVP(gl, program, transform, camera) {
     let modelMatrix = getModel(transform);
-    let viewMatrix = getView(camPos, camDir, camUp);
-    let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
+    let viewMatrix = getView(camera);
+    let projectionMatrix = getProjection(camera);
 
     var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
 
@@ -613,17 +613,17 @@ function runWebGL(queue) {
       gl.disable(gl.DEPTH_TEST);
 
       // Because the project uses coordinate system with Z going up/down
-      var skyBoxModel = mat4.create();
-      var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
-      mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
-
-      var skyBoxView = mat4.create();
-      var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
-      mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
-
-      var skyBoxProj = getProjection(fov, aspectRatio, near, far);
-
-      drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+      // var skyBoxModel = mat4.create();
+      // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+      // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+      //
+      // var skyBoxView = mat4.create();
+      // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+      // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+      //
+      // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
+      //
+      // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
 
       gl.enable(gl.DEPTH_TEST);
 
@@ -644,8 +644,7 @@ function runWebGL(queue) {
                 updateMVP(
                     gl, program,
                     mesh.transform,
-                    scene.camera.transform.position, scene.camera.defaultCamDir, scene.camera.camUp,
-                    fov, aspectRatio, near, far
+                    scene.camera
                 );
 
                 draw(gl, program, shape, () => {});
