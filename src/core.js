@@ -416,8 +416,4 @@ if (event.which == 68 || event.which == 39) { //d or right arrow, move right
   vec3.scale(moveAmount, dir, speed);
   vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 }
-
-
-
-
 },false);
