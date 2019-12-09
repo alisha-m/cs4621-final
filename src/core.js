@@ -194,7 +194,7 @@ function getNormal(vert1, vert2, vert3) {
 }
 
 function getHeight(x, y) {
-    return 0;
+    return 0.5 * noise.simplex2(x / 100, y / 100) + 0.1 * noise.simplex2(x / 10, y / 10);
 }
 
 function makeSurface(width, numDivisions, center, rotation) {
@@ -279,7 +279,7 @@ function makeSurface(width, numDivisions, center, rotation) {
 
             // console.log(xCoord, yCoord);
 
-            geom.vertices.push(vec3.fromValues(xCoord, getHeight(x, y), yCoord));
+            geom.vertices.push(vec3.fromValues(getHeight(x, y), xCoord, yCoord));
             geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
             geom.uvs.push(vec2.fromValues(x % 2, y % 2));
             
@@ -571,6 +571,8 @@ var mouseisDown = false;
 
 // Start and Run WebGL
 function startWebGL() {
+    noise.seed(0);
+
     // get all images
     var queue = new createjs.LoadQueue(true);
     queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
@@ -651,8 +653,8 @@ function runWebGL(queue) {
 
     // ADD STUFF TO SCENE
 
-    let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    let surface = makeSurface(1.0, 20.0, vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0));
+    // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
+    let surface = makeSurface(10, 100, vec3.fromValues(0, 0, -0.5), vec3.fromValues(0, Math.PI / 2, 0));
 
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);
