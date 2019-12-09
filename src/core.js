@@ -194,7 +194,7 @@ function getNormal(vert1, vert2, vert3) {
 }
 
 function getHeight(x, y) {
-    return 5 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
+    return 10 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
 }
 
 function makeSurface(width, numDivisions, center) {
@@ -546,10 +546,8 @@ function getProjection(camera) {
 }
 
 function getNormalMatrix(model, view) {
-    let normalMat = mat4.create();
-    mat4.mul(normalMat, view, model);
-    mat4.invert(normalMat, normalMat);
-    mat4.transpose(normalMat, normalMat);
+    let normalMat = mat3.create();
+    mat3.normalFromMat4(normalMat, model);
     return normalMat;
 }
 
@@ -576,7 +574,7 @@ function updateMVP(gl, program, transform, camera) {
     gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
-    gl.uniformMatrix4fv(normalMatLocation, false, normalMatrix);
+    gl.uniformMatrix3fv(normalMatLocation, false, normalMatrix);
 }
 
 function storeLocations(gl, program) {

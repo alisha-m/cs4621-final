@@ -56,7 +56,7 @@ attribute vec2 vert_texCoord;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform mat4 normalMat;
+uniform mat3 normalMat;
 
 varying vec4 geom_position;
 varying vec3 geom_normal;
@@ -66,13 +66,13 @@ void main() {
     gl_Position = projection * view * model * vec4(vert_position, 1.0);
 
     geom_position = view * model * vec4(vert_position, 1.0);
-    geom_normal = normalize(view * model * vec4(vert_normal, 1.0)).xyz;
+    geom_normal = normalize(/*normalMat */ vert_normal);
     geom_texCoord = vert_texCoord;
 }
 </script>
 
 <script id="fragmentShader" type="x-shader/x-fragment">
-// /*
+/*
     precision highp float;
 
     uniform sampler2D texture1;
@@ -128,9 +128,9 @@ void main() {
             gl_FragColor = vec4(170.0/255.0, 160.0/255.0, 0.0, 1.0); 
         }
     }
-// */    
+*/    
 
- /*
+// /*
   precision highp float;
 
   uniform sampler2D texture1;
@@ -140,7 +140,20 @@ void main() {
   void main() {
       gl_FragColor = texture2D(texture1, geom_texCoord);
   }
- */
+// */
+/*
+precision highp float;
+
+uniform sampler2D texture1;
+
+varying vec4 geom_position;
+varying vec3 geom_normal;
+varying vec2 geom_texCoord;
+
+void main() {
+    gl_FragColor = texture2D(texture1, geom_texCoord) * max(0.3, dot(normalize(vec3(1.0, 1.0, 1.0)), geom_normal));
+}
+*/
 </script>
 
 <script id="vertexShaderSkyBox" type="x-shader/x-vertex">
