@@ -9,10 +9,12 @@ class Camera extends SceneObject {
         this.aspectRatio = aspectRatio;
         this.near = near;
         this.far = far;
+        this.offsetZ = 0.3;
 
         this.defaultCamDir = vec3.fromValues(1, 0, 0);
         this.camUp = vec3.fromValues(0, 0, 1);
         this.currentHeading = 0.0;
+        this.landHeight = 0.3;
     }
 
     getCamDir() {
@@ -25,7 +27,6 @@ class Camera extends SceneObject {
 
     turnRight(speed) {
       this.currentHeading += 0.1;
-      console.log(this.currentHeading);
       // Bound the angle
       if(this.currentHeading >= Math.PI * 2.0) {
         this.currentHeading -= Math.PI * 2.0;
@@ -37,7 +38,6 @@ class Camera extends SceneObject {
 
     turnLeft(speed) {
       this.currentHeading -= 0.1;
-      console.log(this.currentHeading);
       // Bound the angle
       if(this.currentHeading >= Math.PI * 2.0) {
         this.currentHeading -= Math.PI * 2.0;
@@ -49,13 +49,19 @@ class Camera extends SceneObject {
 
     goForward(speed) {
       let moveAmount = vec3.create();
-      vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
+      vec3.scale(moveAmount, scene.camera.getCamDir(), speed);
       vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+
+      //New height
+      scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
     }
 
     goBackward(speed) {
       let moveAmount = vec3.create();
-      vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
+      vec3.scale(moveAmount, scene.camera.getCamDir(), speed);
       vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+
+      //New height
+      scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
     }
 }
