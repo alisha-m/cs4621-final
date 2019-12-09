@@ -142,7 +142,7 @@ function constructMaze() {
     for (let i = 0; i < maze.sizeX; i++) {
         for (let j = 0; j < maze.sizeY; j++) {
             let isWall = maze.data[i][j] == 1;
-            
+
             let left = i;
             let right = i + 1;
             let top = j + 1;
@@ -163,7 +163,7 @@ function constructMaze() {
                 let drawTop = j != maze.sizeY - 1 && maze.data[i][j+1] == 0;
 
                 if (drawLeft) {
-                    let leftWallCenter = vec3.fromValues(left, centerY, wallZ); 
+                    let leftWallCenter = vec3.fromValues(left, centerY, wallZ);
                     let leftWallShapeData = getQuadMesh(leftWallCenter, leftRotation, width, height);
                     wallMeshes.push(leftWallShapeData);
                 }
@@ -215,7 +215,7 @@ function initializeWebGL(canvas) {
 
 function createGlslProgram(gl, vertexShaderId, fragmentShaderId) {
     var program = gl.createProgram();
-    
+
     gl.attachShader(program, createShader(gl, vertexShaderId));
     gl.attachShader(program, createShader(gl, fragmentShaderId));
     gl.linkProgram(program);
@@ -486,9 +486,9 @@ function lerpf(a, b, t) {
 }
 
 function isWalkable(targetMazePos) {
-    if (targetMazePos[0] < 0 || targetMazePos[0] > maze.sizeX 
+    if (targetMazePos[0] < 0 || targetMazePos[0] > maze.sizeX
         || targetMazePos[1] < 0 || targetMazePos[1] > maze.sizeY) {
-        
+
         return false;
     }
 
@@ -558,7 +558,7 @@ function runWebGL() {
     var mazeMeshes = updateMaze();
     var wallMeshes = mazeMeshes.wallMeshes;
     var floorMeshes = mazeMeshes.floorMeshes;
-    
+
     // make scene objects for walls and floors
     for (let i = 0; i < wallMeshes.length; i++) {
         wallMeshes[i].material.texture = wallTexture;
@@ -569,7 +569,7 @@ function runWebGL() {
         scene.addSceneObject(floorMeshes[i]);
     }
 
-    
+
     // make camera and add it to the scene
     let camPos = vec3.fromValues(maze.startPosition[0] + 0.5, maze.startPosition[1] + 0.5, getEyeHeight());
     let camDir = vec3.fromValues(1, 0, 0);
@@ -583,7 +583,7 @@ function runWebGL() {
 
     let camTransform = new Transform(mazeToWorld(maze.startPosition), vec3.fromValues(0, maze.startHeading, 0));
     scene.camera = new Camera("Maze Camera", camTransform, fov, aspectRatio, near, far);
-    
+
     // setup time stuff
     var lastTime = jQuery.now();
     var deltaTime = 0;
@@ -617,7 +617,7 @@ function runWebGL() {
             scene.camera.transform.position = targetPos;
             scene.camera.transform.rotation = vec3.fromValues(0, targetHeading, 0);
         }
-        
+
         // START CAMERA UPDATE STUFF
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
@@ -645,7 +645,7 @@ function runWebGL() {
             } else {
                 // vec3.lerp(camera.position, camera.position, targetPos, timeElapsed / ANIMATION_DURATION);
                 scene.camera.transform.position[0] = lerpf(scene.camera.transform.position[0], targetPos[0], timeElapsed / ANIMATION_DURATION);
-                
+
             }
         }
         // STOP CAMERA UPDATE STUFF
@@ -694,13 +694,13 @@ $("#webglCanvas").keydown(function (event) {
         return;
     }
 
-    if (event.which == 37 && !turning && !turning) { //arrow left, turn left
+    if (event.keyCode == 37 && !turning && !turning) { //arrow left, turn left
         turning = true;
         targetHeading += Math.PI / 2;
     }
-    else if (event.which == 38 && !moving && !turning) { //arrow up, move up
+    else if (event.keyCode == 38 && !moving && !turning) { //arrow up, move up
         let currentMazePos = worldToMaze(scene.camera.transform.position);
-        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1]), Math.sin(scene.camera.transform.rotation[1]));        
+        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1]), Math.sin(scene.camera.transform.rotation[1]));
 
         let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
         vec2.add(targetMazePos, targetMazePos, moveAmount);
@@ -710,13 +710,13 @@ $("#webglCanvas").keydown(function (event) {
             targetPos = mazeToWorld(targetMazePos);
         }
     }
-    else if (event.which == 39 && !turning && !moving){ //arrow right
+    else if (event.keyCode == 39 && !turning && !moving){ //arrow right
         turning = true;
         targetHeading -= Math.PI / 2;
     }
-    else if (event.which == 40 && !moving && !turning){ //arrow down
+    else if (event.keyCode == 40 && !moving && !turning){ //arrow down
         let currentMazePos = worldToMaze(scene.camera.transform.position);
-        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1] + Math.PI), Math.sin(scene.camera.transform.rotation[1] + Math.PI));        
+        let moveAmount = vec2.fromValues(Math.cos(scene.camera.transform.rotation[1] + Math.PI), Math.sin(scene.camera.transform.rotation[1] + Math.PI));
 
         let targetMazePos = vec2.fromValues(currentMazePos[0], currentMazePos[1]);
         vec2.add(targetMazePos, targetMazePos, moveAmount);
@@ -725,8 +725,10 @@ $("#webglCanvas").keydown(function (event) {
             moving = true;
             targetPos = mazeToWorld(targetMazePos);
         }
-    } 
+    }
+    return false;
 });
+
 // TODO: Your code here.
 window.addEventListener("keydown", function(e) {
     // space and arrow keys

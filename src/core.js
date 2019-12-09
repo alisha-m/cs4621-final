@@ -87,6 +87,102 @@ function loadTexture(gl, image, activeTexture) {
         return texture;
 }
 
+// Sky box - Used this page: https://learnopengl.com/Advanced-OpenGL/Cubemaps
+// Images should be in order: posX, negX, posY, negY, posZ, negZ
+function createCubeMapTexture(gl, images) {
+    var texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    var texTargets = [
+        gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+        gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+        gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+        gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+        gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
+    ];
+
+    for(var i = 0; i < 6; i++) {
+        gl.texImage2D(texTargets[i], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
+    }
+
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    // gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+    return texture;
+}
+
+function createBox(gl, sizeX, sizeY) {
+    var shape = {};
+    var scale = Math.max(sizeX, sizeY)*0.5;
+
+    var positions = [
+        -0.5*scale, -0.5*scale, -0.5*scale,
+         0.5*scale, -0.5*scale, -0.5*scale,
+        -0.5*scale,  0.5*scale, -0.5*scale,
+         0.5*scale,  0.5*scale, -0.5*scale,
+
+        -0.5*scale, -0.5*scale,  0.5*scale,
+         0.5*scale, -0.5*scale,  0.5*scale,
+        -0.5*scale,  0.5*scale,  0.5*scale,
+         0.5*scale,  0.5*scale,  0.5*scale
+    ];
+
+    var indices = [
+        // Front
+        2, 3, 7,
+        2, 7, 6,
+
+        // Back
+        0, 4, 5,
+        0, 5, 1,
+
+        // Right
+        1, 7, 3,
+        1, 5, 7,
+
+        // Left
+        0, 2, 6,
+        0, 6, 4,
+
+        // Top
+        4, 7, 5,
+        4, 6, 7,
+
+        // Bottom
+        0, 1, 3,
+        0, 3, 2
+    ];
+
+    var vertexData = [];
+    var vertexCount = positions.length / 3;
+    for (var i = 0; i < vertexCount; i++) {
+        vertexData.push(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+    }
+    var vertexArray = new Float32Array(vertexData);
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    var indexArray = new Uint16Array(indices);
+    var indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    shape.vertexBuffer = vertexBuffer;
+    shape.indexBuffer = indexBuffer;
+    shape.size = indices.length;
+    shape.stride = 4 * 3;
+    shape.positionOffset = 4 * 0;
+    return shape;
+}
+
+// New Functions
 function getNormal(vert1, vert2, vert3) {
     var a = vec3.create(), b = vec3.create(), normal = vec3.create();
 
@@ -301,6 +397,38 @@ function createShape(gl, geometry) {
     return shape;
 }
 
+function createShapeOG(gl, shapeData) {
+    var shape = {};
+
+    var vertexData = [];
+    var vertexCount = shapeData.positions.length / 3;
+    for (var i = 0; i < vertexCount; i++) {
+        vertexData.push(shapeData.positions[3 * i], shapeData.positions[3 * i + 1], shapeData.positions[3 * i + 2]);
+        vertexData.push(shapeData.normals[3 * i], shapeData.normals[3 * i + 1], shapeData.normals[3 * i + 2]);
+        vertexData.push(shapeData.texCoords[2 * i], shapeData.texCoords[2 * i + 1]);
+    }
+    var vertexArray = new Float32Array(vertexData);
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    var indexArray = new Uint16Array(shapeData.indices);
+    var indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    shape.vertexBuffer = vertexBuffer;
+    shape.indexBuffer = indexBuffer;
+    shape.size = shapeData.indices.length;
+    shape.stride = 4 * (3 + 3 + 2);
+    shape.positionOffset = 4 * 0;
+    shape.normalOffset = 4 * 3;
+    shape.texCoordOffset = 4 * (3 + 3);
+    return shape;
+}
+
 function draw(gl, program, shape, initialize) {
     gl.useProgram(program);
 
@@ -365,19 +493,19 @@ function getModel(transform) {
     return M;
 }
 
-function getView(camPos, camDir, camUp) {
+function getView(camera) {
     let lookPoint = vec3.create();
-    vec3.add(lookPoint, camPos, camDir);
+    vec3.add(lookPoint, camera.transform.position, camera.getCamDir());
 
     let viewMatrix = mat4.create();
-    mat4.lookAt(viewMatrix, camPos, lookPoint, camUp);
+    mat4.lookAt(viewMatrix, camera.transform.position, lookPoint, camera.camUp);
 
     return viewMatrix;
 }
 
-function getProjection(fieldOfView, aspectRatio, near, far) {
+function getProjection(camera) {
     let projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, fieldOfView, aspectRatio, near, far);
+    mat4.perspective(projectionMatrix, camera.fieldOfView, camera.aspectRatio, camera.near, camera.far);
 
     return projectionMatrix;
 }
@@ -391,10 +519,10 @@ function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
     return mvpMatrix;
 }
 
-function updateMVP(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+function updateMVP(gl, program, transform, camera) {
     let modelMatrix = getModel(transform);
-    let viewMatrix = getView(camPos, camDir, camUp);
-    let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
+    let viewMatrix = getView(camera);
+    let projectionMatrix = getProjection(camera);
 
     var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
 
@@ -413,44 +541,116 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-// give camera default values for now
+// Give camera default values for now
 var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
 var camera = new Camera("Main Camera", camTransform, Math.PI / 2, 800/600, 0.1, 100);
 var scene = new Scene(camera);
 
-function startWebGL() {
-    // create image data structures
-    var floorImage = new Image();
-    floorImage.crossOrigin = "anonymous";
-    floorImage.src = "data/floor.jpg";
+window.addEventListener("keydown", function (event) {
+  console.log(scene);
+  let speed = 0.1;
+  let currentPos = scene.camera.transform.position;
+  let moveAmount = vec3.create();
 
-    var wallImage = new Image();
-    wallImage.crossOrigin = "anonymous";
+  if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
+    vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
+    vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+  }
 
-    wallImage.onload = () => {
-        scene.images.floorImage = floorImage;
-        scene.images.wallImage = wallImage;
+  if (event.which == 83 || event.which == 40) { //s or down arrow, move backwards
+    vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
+    vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+  }
+  if (event.which == 65 || event.which == 37) { //a or left arrow, move left
+    let dir = vec3.create();
+    vec3.copy(dir,scene.camera.defaultCamDir);
+    vec3.cross(dir, dir, scene.camera.camUp);
+    vec3.scale(moveAmount, dir, speed);
+    vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+  }
+  if (event.which == 68 || event.which == 39) { //d or right arrow, move right
+    let dir = vec3.create();
+    vec3.copy(dir,scene.camera.defaultCamDir);
+    console.log(dir);
+    vec3.cross(dir, dir, scene.camera.camUp);
+    vec3.scale(moveAmount, dir, speed);
+    vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+  }
 
-        runWebGL();
-    }
-
-    wallImage.src = "data/wall.jpg";
-}
+},false);
 
 
 var timeElapsed = 0;
-function runWebGL() {
+var currently_moving = false;
+var counter =0;
+
+var mouseisDown = false;
+
+// Start and Run WebGL
+function startWebGL() {
+    // get all images
+    var queue = new createjs.LoadQueue(true);
+    queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
+    queue.loadFile({ id: "wall", src: "data/wall.jpg", type: "image" });
+
+    var path = "data/field-skyboxes/Meadow/";
+
+    queue.loadFile({ id: "skyPosX", src: (path + "posx.jpg"), type: "image" });
+    queue.loadFile({ id: "skyNegX", src: (path + "negx.jpg"), type: "image" });
+    queue.loadFile({ id: "skyPosY", src: (path + "posy.jpg"), type: "image" });
+    queue.loadFile({ id: "skyNegY", src: (path + "negy.jpg"), type: "image" });
+    queue.loadFile({ id: "skyPosZ", src: (path + "posz.jpg"), type: "image" });
+    queue.loadFile({ id: "skyNegZ", src: (path + "negz.jpg"), type: "image" });
+
+    queue.on("complete", function () {
+        scene.images.floorImage = queue.getResult("floor");
+        scene.images.wallImage = queue.getResult("wall");
+        runWebGL(queue);
+    }, this);
+}
+
+function runWebGL(queue) {
     var gl = initializeWebGL($("#webglCanvas"));
     var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
+    var landProgram = createGlslProgram(gl, "vertexShaderLand", "fragmentShaderLand");
 
     storeLocations(gl, program);
 
-    gl.useProgram(program);
+    //Sky Box stuff
+    var box = createBox(gl, 100, 100);
+    var textures = [];
+    textures.push(queue.getResult("skyPosX", false));
+    textures.push(queue.getResult("skyNegX", false));
+    textures.push(queue.getResult("skyPosZ", false));
+    textures.push(queue.getResult("skyNegZ", false));
+    textures.push(queue.getResult("skyNegY", false)); // Switched order
+    textures.push(queue.getResult("skyPosY", false));
 
-    // Tell WebGL to test hte depth when drawing
-    gl.enable(gl.DEPTH_TEST);
-    // cull back-facing triangles
-    gl.disable(gl.CULL_FACE);
+    var cubeMap = createCubeMapTexture(gl, textures);
+    var skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
+    skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
+    skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+    skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
+    skyBoxProgram.xform_viewMat = gl.getUniformLocation(skyBoxProgram, "xform_viewMat");
+    skyBoxProgram.xform_modelMat = gl.getUniformLocation(skyBoxProgram, "xform_modelMat");
+    skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+
+    skyBoxProgram.draw = function (gl, shape, initialize) {
+        gl.useProgram(skyBoxProgram);
+
+        initialize();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
+        gl.enableVertexAttribArray(skyBoxProgram.vert_position);
+        gl.vertexAttribPointer(skyBoxProgram.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
+        gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+        // gl.useProgram(null);
+    };
 
     // setup shaders
     let floorImage = scene.images.floorImage;
@@ -483,18 +683,57 @@ function runWebGL() {
     // setup time stuff
     var lastTime = jQuery.now();
     var deltaTime = 0;
+
     function updateWebGl() {
-        gl.clearColor(0.53, 0.81, 0.92, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      // Time STUFF
+      deltaTime = jQuery.now() - lastTime;
+      lastTime = jQuery.now();
 
-        deltaTime = jQuery.now() - lastTime;
-        lastTime = jQuery.now();
+      let drawBox = function(box, tex, proj, view, model) {
+          skyBoxProgram.draw(gl, box, function () {
+              if (skyBoxProgram.xform_projMat != null) {
+                  gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
+              }
+              if (skyBoxProgram.xform_viewMat != null) {
+                  gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
+              }
+              if (skyBoxProgram.xform_modelMat != null) {
+                  gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
+              }
+              if (skyBoxProgram.texture != null) {
+                  gl.activeTexture(gl.TEXTURE0);
+                  gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+                  gl.uniform1i(skyBoxProgram.texture, 0);
+              }
+          });
+      }
 
-        // draw all scene objects
-        // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
-        // TODO: Don't assume the same program for every mesh, use program defined by mesh material
-        if (gl.getUniformLocation(program, "texture1") != null) {
-            for (let i = 0; i < scene.meshObjects.length; i++) {
+      // Draw skybox before depth testing
+      gl.clearDepth(1.0);
+      gl.clearColor(0.3, 0.7, 1.0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.disable(gl.DEPTH_TEST);
+
+      // Because the project uses coordinate system with Z going up/down
+      // var skyBoxModel = mat4.create();
+      // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+      // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+      //
+      // var skyBoxView = mat4.create();
+      // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+      // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+      //
+      // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
+      //
+      // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+
+      gl.enable(gl.DEPTH_TEST);
+
+      // draw all scene objects
+      // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
+      // TODO: Don't assume the same program for every mesh, use program defined by mesh material
+      if (gl.getUniformLocation(program, "texture1") != null) {
+                for (let i = 0; i < scene.meshObjects.length; i++) {
                 let mesh = scene.meshObjects[i];
 
                 if (mesh.material.textureIdx > -1) {
@@ -507,8 +746,7 @@ function runWebGL() {
                 updateMVP(
                     gl, program,
                     mesh.transform,
-                    scene.camera.transform.position, scene.camera.defaultCamDir, scene.camera.camUp,
-                    fov, aspectRatio, near, far
+                    scene.camera
                 );
 
                 draw(gl, program, shape, () => {});
@@ -522,39 +760,3 @@ function runWebGL() {
 }
 
 startWebGL();
-
-window.addEventListener("keydown", function (event) {
-  console.log(scene);
-  let speed = 0.1;
-  let currentPos = scene.camera.transform.position;
-  let moveAmount = vec3.create();
-
-  if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
-    vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-    vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-  }
-
-if (event.which == 83 || event.which == 40) { //s or down arrow, move backwards
-  vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-  vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-}
-if (event.which == 65 || event.which == 37) { //a or left arrow, move left
-  let dir = vec3.create();
-  vec3.copy(dir,scene.camera.defaultCamDir);
-  vec3.cross(dir, dir, scene.camera.camUp);
-  vec3.scale(moveAmount, dir, speed);
-  vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-}
-if (event.which == 68 || event.which == 39) { //d or right arrow, move right
-  let dir = vec3.create();
-  vec3.copy(dir,scene.camera.defaultCamDir);
-  console.log(dir);
-  vec3.cross(dir, dir, scene.camera.camUp);
-  vec3.scale(moveAmount, dir, speed);
-  vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-}
-
-
-
-
-},false);
