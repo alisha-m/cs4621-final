@@ -35,7 +35,7 @@
     <h3>Alexander DeGraff (ard96) &middot
         Alisha Mithal (am2658) &middot
         Stephen Newcomb (sn498) &middot
-        Jake Sanders (jas222) &middot
+        Jake Sanders (jas2223) &middot
         Janie Walters (jjw249)
     </h3>
 </div>
@@ -49,11 +49,13 @@
 <!-- Shaders -->
 <script id="vertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;
+attribute vec3 vert_normal;
 attribute vec2 vert_texCoord;
 
 // transformation matrices
 uniform mat4 modelViewProjection;
 
+varying vec3 geom_normal;
 varying vec2 geom_texCoord;
 
 void main() {
@@ -67,6 +69,7 @@ precision highp float;
 
 uniform sampler2D texture1;
 
+varying vec3 geom_normal;
 varying vec2 geom_texCoord;
 
 void main() {
