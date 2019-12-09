@@ -5,7 +5,7 @@ class Noise3D {
 
     // x is a glMatrix vec3
     // returns a vec3
-    mod289_vec3(x) {
+    static mod289_vec3(x) {
         let xScaled = vec3.clone(x);
         vec3.scale(xScaled, xScaled, 1 / 289.0);
         vec3.floor(xScaled, xScaled);
@@ -21,7 +21,7 @@ class Noise3D {
 
     // x is a glMatrix vec4
     // returns a vec4
-    mod289_vec4(x) {
+    static mod289_vec4(x) {
         let xScaled = vec4.clone(x);
         vec4.scale(xScaled, xScaled, 1 / 289.0);
         vec4.floor(xScaled, xScaled);
@@ -35,7 +35,7 @@ class Noise3D {
 
     // x is a glMatrix vec4
     // returns a vec4
-    permute(x) {
+    static permute(x) {
         let xModified = vec4.clone(x);
         vec4.scale(xModified, xModified, 34);
         vec4.add(xModified, xModified, vec4.fromValues(1, 1, 1, 1));
@@ -52,7 +52,7 @@ class Noise3D {
 
     // r is a glMatrix vec4
     // returns a vec4
-    taylorInvSqrt(r) {
+    static taylorInvSqrt(r) {
         let funkyNumVec1 = vec4.fromValues(1.79284291400159, 1.79284291400159, 1.79284291400159, 1.79284291400159);
         let funkyNumVec2 = vec4.fromVlaues(0.85373472095314, 0.85373472095314, 0.85373472095314, 0.85373472095314);
 
@@ -67,7 +67,7 @@ class Noise3D {
     // edge and v are glMatrix vec3
     // returns a vec3
     // see here for an explanation https://github.com/ashima/webgl-noise/blob/master/src/noise3Dgrad.glsl
-    step_vec3(edge, v) {
+    static step_vec3(edge, v) {
         let stepVec = vec3.create();
 
         if (v.x < edge.x) stepVec.x = 0.0;
@@ -83,7 +83,7 @@ class Noise3D {
     }
 
     // like step_vec3 but with vec4s
-    step_vec4(edge, v) {
+    static step_vec4(edge, v) {
         let stepVec = vec4.create();
 
         if (v.x < edge.x) stepVec.x = 0.0;
@@ -105,7 +105,7 @@ class Noise3D {
     // returns a vec3 that contains the min components of each
     // for example, if v1 = (1, 3, 4), and v2 = (-2, 5, 2), then this function
     // will return (-2, 3, 2).
-    min_vec3(v1, v2) {
+    static min_vec3(v1, v2) {
         let minVec = vec3.create();
 
         minVec.x = Math.min(v1.x, v2.x);
@@ -116,7 +116,7 @@ class Noise3D {
     }
 
     // works like min_vec3 but max
-    max_vec3(v1, v2) {
+    static max_vec3(v1, v2) {
         let maxVec = vec3.create();
 
         maxVec.x = Math.max(v1.x, v2.x);
@@ -127,7 +127,7 @@ class Noise3D {
     }
 
     // works like max_vec3 but with vec4's
-    max_vec4(v1, v2) {
+    static max_vec4(v1, v2) {
         let maxVec = vec3.create();
 
         maxVec.x = Math.max(v1.x, v2.x);
@@ -138,9 +138,12 @@ class Noise3D {
         return maxVec;
     }
 
+    static abs_vec3(v) {
+        return vec3.fromValues(Math.abs(v.x), Math.abs(v.y), Math.abs(v.z));;
+    }
     // v is a vec4
     // returns a vector which has the components of v, but the absolute values
-    abs_vec4(v) {
+    static abs_vec4(v) {
         let absVec = vec4.create();
 
         absVec.x = Math.abs(v.x);
@@ -154,7 +157,7 @@ class Noise3D {
     // v is a glMatrix vec3
     // returns a float
     // this is the main simplex noise function thing
-    snoise(v) {
+    static snoise(v) {
         let C = vec2.fromValues(1 / 6.0, 1 / 3.0);
         let D = vec4.fromValues(0, 0.5, 1, 2);
 
