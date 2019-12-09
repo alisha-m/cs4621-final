@@ -182,40 +182,6 @@ function createBox(gl, sizeX, sizeY) {
     return shape;
 }
 
-// Ground plane
-function createPlane(gl,sizex,sizey){
-    var vertexData1  = [];
-    var indexData1 = [];
-
-    var xoffset = -sizex *.03/2;
-    var yoffset = -sizey*.03/2;
-
-    // creates a center offset
-    for (var x = 0; x< sizex; x++){
-      for (var y=0; y<sizey; y++){
-          var offset1 = (vertexData1.length /5);
-          var floorData = [x*.03 +0. + xoffset, y*.03 +0. +yoffset, 0.,
-                           0.,0.,
-                           x*.03 +.03+xoffset,  y*.03 +0. +yoffset, 0.,
-                           4.,0.,
-                           x*.03 +.03 + xoffset, y*.03 +.03 +yoffset, 0.,
-                           4.,4.   ,
-                           x*.03 +0. + xoffset, y*.03 +.03 +yoffset, 0.,
-                           0.,4.];
-          var floorIndex = [0+ offset1,1+offset1,2+offset1,0+offset1,2+offset1,3+offset1];
-
-          vertexData1 = vertexData1.concat(floorData);
-          indexData1 = indexData1.concat(floorIndex);
-
-
-
-      }
-    }
-    var floor = createShape(gl, vertexData1, indexData1);
-
-    return floor;
- }
-
 // New Functions
 
 function getQuadMesh(center, rotation, width, height) {
@@ -397,19 +363,19 @@ function getModel(transform) {
     return M;
 }
 
-function getView(camPos, camDir, camUp) {
+function getView(camera) {
     let lookPoint = vec3.create();
-    vec3.add(lookPoint, camPos, camDir);
+    vec3.add(lookPoint, camera.transform.position, camera.getCamDir());
 
     let viewMatrix = mat4.create();
-    mat4.lookAt(viewMatrix, camPos, lookPoint, camUp);
+    mat4.lookAt(viewMatrix, camera.transform.position, lookPoint, camera.camUp);
 
     return viewMatrix;
 }
 
-function getProjection(fieldOfView, aspectRatio, near, far) {
+function getProjection(camera) {
     let projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, fieldOfView, aspectRatio, near, far);
+    mat4.perspective(projectionMatrix, camera.fieldOfView, camera.aspectRatio, camera.near, camera.far);
 
     return projectionMatrix;
 }
@@ -423,10 +389,10 @@ function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
     return mvpMatrix;
 }
 
-function updateMVP(gl, program, transform, camPos, camDir, camUp, fieldOfView, aspectRatio, near, far) {
+function updateMVP(gl, program, transform, camera) {
     let modelMatrix = getModel(transform);
-    let viewMatrix = getView(camPos, camDir, camUp);
-    let projectionMatrix = getProjection(fieldOfView, aspectRatio, near, far);
+    let viewMatrix = getView(camera);
+    let projectionMatrix = getProjection(camera);
 
     var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
 
@@ -452,37 +418,20 @@ var scene = new Scene(camera);
 
 window.addEventListener("keydown", function (event) {
   console.log(scene);
-  let speed = 0.1;
-  let currentPos = scene.camera.transform.position;
-  let moveAmount = vec3.create();
-
+  let speed = 0.4;
   if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
-    vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-    vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    scene.camera.goForward(speed);
   }
-
   if (event.which == 83 || event.which == 40) { //s or down arrow, move backwards
-    vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-    vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    scene.camera.goBackward(speed);
   }
   if (event.which == 65 || event.which == 37) { //a or left arrow, move left
-    let dir = vec3.create();
-    vec3.copy(dir,scene.camera.defaultCamDir);
-    vec3.cross(dir, dir, scene.camera.camUp);
-    vec3.scale(moveAmount, dir, speed);
-    vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    scene.camera.turnLeft(speed);
   }
   if (event.which == 68 || event.which == 39) { //d or right arrow, move right
-    let dir = vec3.create();
-    vec3.copy(dir,scene.camera.defaultCamDir);
-    console.log(dir);
-    vec3.cross(dir, dir, scene.camera.camUp);
-    vec3.scale(moveAmount, dir, speed);
-    vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    scene.camera.turnRight(speed);
   }
-
 },false);
-
 
 var timeElapsed = 0;
 var currently_moving = false;
@@ -516,7 +465,6 @@ function startWebGL() {
 function runWebGL(queue) {
     var gl = initializeWebGL($("#webglCanvas"));
     var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
-    var landProgram = createGlslProgram(gl, "vertexShaderLand", "fragmentShaderLand");
 
     storeLocations(gl, program);
 
@@ -613,17 +561,17 @@ function runWebGL(queue) {
       gl.disable(gl.DEPTH_TEST);
 
       // Because the project uses coordinate system with Z going up/down
-      var skyBoxModel = mat4.create();
-      var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
-      mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
-
-      var skyBoxView = mat4.create();
-      var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
-      mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
-
-      var skyBoxProj = getProjection(fov, aspectRatio, near, far);
-
-      drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+      // var skyBoxModel = mat4.create();
+      // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+      // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+      //
+      // var skyBoxView = mat4.create();
+      // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+      // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+      //
+      // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
+      //
+      // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
 
       gl.enable(gl.DEPTH_TEST);
 
@@ -644,8 +592,7 @@ function runWebGL(queue) {
                 updateMVP(
                     gl, program,
                     mesh.transform,
-                    scene.camera.transform.position, scene.camera.defaultCamDir, scene.camera.camUp,
-                    fov, aspectRatio, near, far
+                    scene.camera
                 );
 
                 draw(gl, program, shape, () => {});
