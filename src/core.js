@@ -183,6 +183,169 @@ function createBox(gl, sizeX, sizeY) {
 }
 
 // New Functions
+function getNormal(vert1, vert2, vert3) {
+    var a = vec3.create(), b = vec3.create(), normal = vec3.create();
+
+    vec3.subtract(a, vert1, vert2);
+    vec3.subtract(b, vert1, vert3);
+    vec3.cross(normal, a, b);
+    vec3.normalize(normal, normal);
+    return normal;
+}
+
+function getHeight(x, y) {
+    return 5 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
+}
+
+function makeSurface(width, numDivisions, center) {
+    // var space = width / numDivisions;
+
+    // var geom = new Geometry();
+
+    // geom.uvs.push(vec2.fromValues(0.0, 0.0)); // bottom left
+    // geom.uvs.push(vec2.fromValues(1.0, 0.0)); // bottom right
+    // geom.uvs.push(vec2.fromValues(1.0, 1.0)); // top right
+    // geom.uvs.push(vec2.fromValues(0.0, 1.0)); // top left
+
+    // for(var x = 0; x < numDivisions; x++) {
+    //     for(var y = 0; y < numDivisions; y++) {
+
+    //         var xCoord = center.x + (x * space);
+    //         var yCoord = center.y + (y * space);
+    //         geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
+
+    //         if(x != 0 && y != 0) {
+    //             var bottomLeft = (x - 1) * numDivisions + (y - 1);
+    //             var bottomRight = x * numDivisions + (y - 1);
+    //             var topRight = x * numDivisions + y;
+    //             var topLeft = (x - 1) * numDivisions + y;
+
+    //             var firstNormal = 2 * ((x - 1) * numDivisions + (y - 1));
+    //             var secondNormal = firstNormal + 1;
+
+    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
+    //                                         geom.vertices[bottomRight],
+    //                                         geom.vertices[topRight]));
+    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
+    //                                         geom.vertices[topRight],
+    //                                         geom.vertices[topLeft]));
+
+    //             var lowerFace = new Face();
+    //             lowerFace.setVertex(0, bottomLeft, 0, firstNormal);
+    //             lowerFace.setVertex(1, bottomRight, 1, firstNormal);
+    //             lowerFace.setVertex(2, topRight, 2, firstNormal);
+    //             geom.faces.push(lowerFace);
+
+    //             var upperFace = new Face();
+    //             upperFace.setVertex(0, bottomLeft, 0, secondNormal);
+    //             upperFace.setVertex(1, topRight, 2, secondNormal);
+    //             upperFace.setVertex(2, topLeft, 3, secondNormal);
+    //             geom.faces.push(upperFace);
+
+    //             // vertexData.push(getNormal(vertices[i0], vertices[i1], vertices[i2]),
+    //                             // getNormal(vertices[i0], vertices[i2], vertices[i3]));
+    //             // indexData.push(i0, i1, i2,
+    //                         //    i0, i2, i3);
+
+    //             // normals.push(getNormal(vertices[i0], vertices[i1], vertices[i2]));
+    //             // faces.push(makeFace(i0, i1, i2, 2 * (x * numDivisions + y)));
+
+    //             // normals.push(getNormal(vertices[i0], vertices[i2], vertices[i3]));
+    //             // faces.push(makeFace(i0, i2, i3, 2 * (x * numDivisions + y) + 1));
+    //         }
+    //     }
+    // }
+
+    // // Create material
+    // let mat = new Material("vertexShader", "fragmentShader");
+
+    // // Create transform:
+    // let transform = new Transform(center, 0.0, vec3.fromValues(width, width, 1));
+
+    // // Create mesh object
+    // let mesh = new MeshObject("Surface", transform, geom, mat);
+
+    // return mesh;
+
+    let space = width / numDivisions;
+
+    let geom = new Geometry();
+
+    // Each point has an array of vec3's, where the vectors are the different
+    // normals of all of the adjacent faces. These are averaged together to make
+    // the smooth normal for that point
+    let facetedNormals = [];
+
+    for(let x = 0; x < numDivisions; x++) {
+        facetedNormals.push([]);
+        for(let y = 0; y < numDivisions; y++) {
+
+            let xCoord = -(width / 2) + (x * space);
+            let yCoord = -(width / 2) + (y * space);
+
+            // console.log(xCoord, yCoord);
+
+            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
+            // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
+            geom.uvs.push(vec2.fromValues(x % 2, y % 2));
+            facetedNormals[x].push([]);
+            
+            if(x != 0 && y != 0) {
+                let bottomLeft = (x - 1) * numDivisions + (y - 1);
+                let bottomRight = x * numDivisions + (y - 1);
+                let topRight = x * numDivisions + y;
+                let topLeft = (x - 1) * numDivisions + y;
+
+                let normal1 = getNormal(geom.vertices[bottomLeft], geom.vertices[bottomRight], geom.vertices[topRight]);
+                let normal2 = getNormal(geom.vertices[bottomLeft], geom.vertices[topRight], geom.vertices[topLeft]);
+
+                // bottom left, bottom right, and top right have normal1
+                facetedNormals[x - 1][y - 1].push(normal1); // Bottom left
+                facetedNormals[x][y - 1].push(normal1); // Bottom right
+                facetedNormals[x][y].push(normal1); // Top right
+
+                // bottom left, top right, and top left have normal2
+                facetedNormals[x - 1][y - 1].push(normal2); // Bottom left
+                facetedNormals[x][y].push(normal2); // Top right
+                facetedNormals[x - 1][y].push(normal2); // Top left
+
+                // console.log(bottomLeft, bottomRight, topRight);
+                // console.log(geom.vertices[bottomLeft], geom.vertices[bottomRight], geom.vertices[topRight]);
+                // console.log(bottomLeft, topRight, topLeft);
+                // console.log(geom.vertices[bottomLeft], geom.vertices[topRight], geom.vertices[topLeft]);
+
+                geom.faces.push(new Face(bottomLeft, bottomRight, topRight));
+                geom.faces.push(new Face(bottomLeft, topRight, topLeft));
+            }
+        }
+    }
+
+    // Average the faceted normals and add them, for each point
+    for(let x = 0; x < numDivisions; x++) {
+        for(let y = 0; y < numDivisions; y++) {
+            let normal = vec3.create();
+
+            // Calculate the average
+            for(let i = 0; i < facetedNormals[x][y].length; i++) {
+                vec3.add(normal, normal, facetedNormals[x][y][i]);
+            }
+            vec3.scale(normal, normal, 1 / facetedNormals[x][y].length);
+
+            geom.normals.push(normal);
+        }
+    }
+
+    // Create material
+    let mat = new Material("vertexShader", "fragmentShader");
+
+    // Create transform:
+    let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(width, width, 1));
+
+    // Create mesh object
+    let mesh = new MeshObject("Surface", transform, geom, mat);
+
+    return mesh;
+}
 
 function getQuadMesh(center, rotation, width, height) {
     // Create geometry
@@ -213,7 +376,9 @@ function getQuadMesh(center, rotation, width, height) {
     }
 
     let bottomFace = new Face(0, 1, 2);
+    console.log(quadGeom.vertices[0], quadGeom.vertices[1], quadGeom.vertices[2]);
     let topFace = new Face(0, 2, 3);
+    console.log(quadGeom.vertices[0], quadGeom.vertices[2], quadGeom.vertices[3]);
     quadGeom.faces.push(bottomFace);
     quadGeom.faces.push(topFace);
 
@@ -260,10 +425,10 @@ function createShape(gl, geometry) {
     shape.vertexBuffer = vertexBuffer;
     shape.indexBuffer = indexBuffer;
     shape.size = indexArray.length;
-    shape.stride = vertexCount * (3 + 3 + 2);
-    shape.positionOffset = vertexCount * 0;
-    shape.normalOffset = vertexCount * 3;
-    shape.texCoordOffset = vertexCount * (3 + 3);
+    shape.stride = 4 * (3 + 3 + 2);
+    shape.positionOffset = 4 * 0;
+    shape.normalOffset = 4 * 3;
+    shape.texCoordOffset = 4 * (3 + 3);
     return shape;
 }
 
@@ -380,31 +545,47 @@ function getProjection(camera) {
     return projectionMatrix;
 }
 
-function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
-    let mvpMatrix = mat4.create();
-    mat4.multiply(mvpMatrix, mvpMatrix, projectionMatrix);
-    mat4.multiply(mvpMatrix, mvpMatrix, viewMatrix);
-    mat4.multiply(mvpMatrix, mvpMatrix, modelMatrix);
-
-    return mvpMatrix;
+function getNormalMatrix(model, view) {
+    let normalMat = mat4.create();
+    mat4.mul(normalMat, view, model);
+    mat4.invert(normalMat, normalMat);
+    mat4.transpose(normalMat, normalMat);
+    return normalMat;
 }
+
+// function getMVP(modelMatrix, viewMatrix, projectionMatrix) {
+//     let mvpMatrix = mat4.create();
+//     mat4.multiply(mvpMatrix, mvpMatrix, projectionMatrix);
+//     mat4.multiply(mvpMatrix, mvpMatrix, viewMatrix);
+//     mat4.multiply(mvpMatrix, mvpMatrix, modelMatrix);
+
+//     return mvpMatrix;
+// }
 
 function updateMVP(gl, program, transform, camera) {
     let modelMatrix = getModel(transform);
     let viewMatrix = getView(camera);
     let projectionMatrix = getProjection(camera);
+    let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
 
-    var mvpMatrix = getMVP(modelMatrix, viewMatrix, projectionMatrix);
+    var modelLocation = gl.getUniformLocation(program, "model");
+    var viewLocation = gl.getUniformLocation(program, "view");
+    var projectionLocation = gl.getUniformLocation(program, "projection");
+    var normalMatLocation = gl.getUniformLocation(program, "normalMat");
 
-    var mvpLocation = gl.getUniformLocation(program, "modelViewProjection");
-
-    gl.uniformMatrix4fv(mvpLocation, false, mvpMatrix);
+    gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
+    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+    gl.uniformMatrix4fv(normalMatLocation, false, normalMatrix);
 }
 
 function storeLocations(gl, program) {
     program.vert_position = gl.getAttribLocation(program, "vert_position");
     program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
-    program.mvp = gl.getUniformLocation(program, "modelViewProjection");
+    program.model = gl.getUniformLocation(program, "model");
+    program.view = gl.getUniformLocation(program, "view");
+    program.projection = gl.getUniformLocation(program, "projection");
+    program.normalMat = gl.getUniformLocation(program, "normalMat");
 }
 
 function lerpf(a, b, t) {
@@ -444,6 +625,8 @@ var mouseisDown = false;
 
 // Start and Run WebGL
 function startWebGL() {
+    noise.seed(0);
+
     // get all images
     var queue = new createjs.LoadQueue(true);
     queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
@@ -527,10 +710,16 @@ function runWebGL(queue) {
     scene.camera = new Camera("Main Camera", camTransform, fov, aspectRatio, near, far);
 
     // ADD STUFF TO SCENE
-    let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
 
-    quad.material.texture = floorTexture;
-    scene.addSceneObject(quad);
+    // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
+    let surface = makeSurface(10, 100, vec3.fromValues(0, 0, -0.5));
+
+    // quad.material.texture = floorTexture;
+    // scene.addSceneObject(quad);
+
+    surface.material.texture = floorTexture;
+    scene.addSceneObject(surface);
+
     // STOP ADDING STUFF TO THE SCENE
 
     // setup time stuff
@@ -596,6 +785,7 @@ function runWebGL(queue) {
                 // TODO: Don't assume that you're drawing a quad
                 let shape = createShape(gl, mesh.geometry);
 
+                scene.camera.landHeight = getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
                 updateMVP(
                     gl, program,
                     mesh.transform,
@@ -633,13 +823,13 @@ if (event.which == 65 || event.which == 37) { //a or left arrow, move left
   vec3.copy(dir,scene.camera.defaultCamDir);
   vec3.cross(dir, dir, scene.camera.camUp);
   vec3.scale(moveAmount, dir, speed);
-  vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+//   vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 }
 if (event.which == 68 || event.which == 39) { //d or right arrow, move right
   let dir = vec3.create();
   vec3.copy(dir,scene.camera.defaultCamDir);
   vec3.cross(dir, dir, scene.camera.camUp);
   vec3.scale(moveAmount, dir, speed);
-  vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+//   vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 }
 },false);
