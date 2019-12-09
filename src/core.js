@@ -194,10 +194,10 @@ function getNormal(vert1, vert2, vert3) {
 }
 
 function getHeight(x, y) {
-    return 0.5 * noise.simplex2(x / 100, y / 100) + 0.1 * noise.simplex2(x / 10, y / 10);
+    return 5 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
 }
 
-function makeSurface(width, numDivisions, center, rotation) {
+function makeSurface(width, numDivisions, center) {
     // var space = width / numDivisions;
 
     // var geom = new Geometry();
@@ -271,7 +271,13 @@ function makeSurface(width, numDivisions, center, rotation) {
 
     let geom = new Geometry();
 
+    // Each point has an array of vec3's, where the vectors are the different
+    // normals of all of the adjacent faces. These are averaged together to make
+    // the smooth normal for that point
+    let facetedNormals = [];
+
     for(let x = 0; x < numDivisions; x++) {
+        facetedNormals.push([]);
         for(let y = 0; y < numDivisions; y++) {
 
             let xCoord = -(width / 2) + (x * space);
@@ -279,15 +285,29 @@ function makeSurface(width, numDivisions, center, rotation) {
 
             // console.log(xCoord, yCoord);
 
-            geom.vertices.push(vec3.fromValues(getHeight(x, y), xCoord, yCoord));
-            geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
+            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
+            // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
             geom.uvs.push(vec2.fromValues(x % 2, y % 2));
+            facetedNormals[x].push([]);
             
             if(x != 0 && y != 0) {
                 let bottomLeft = (x - 1) * numDivisions + (y - 1);
                 let bottomRight = x * numDivisions + (y - 1);
                 let topRight = x * numDivisions + y;
                 let topLeft = (x - 1) * numDivisions + y;
+
+                let normal1 = getNormal(geom.vertices[bottomLeft], geom.vertices[bottomRight], geom.vertices[topRight]);
+                let normal2 = getNormal(geom.vertices[bottomLeft], geom.vertices[topRight], geom.vertices[topLeft]);
+
+                // bottom left, bottom right, and top right have normal1
+                facetedNormals[x - 1][y - 1].push(normal1); // Bottom left
+                facetedNormals[x][y - 1].push(normal1); // Bottom right
+                facetedNormals[x][y].push(normal1); // Top right
+
+                // bottom left, top right, and top left have normal2
+                facetedNormals[x - 1][y - 1].push(normal2); // Bottom left
+                facetedNormals[x][y].push(normal2); // Top right
+                facetedNormals[x - 1][y].push(normal2); // Top left
 
                 // console.log(bottomLeft, bottomRight, topRight);
                 // console.log(geom.vertices[bottomLeft], geom.vertices[bottomRight], geom.vertices[topRight]);
@@ -300,11 +320,26 @@ function makeSurface(width, numDivisions, center, rotation) {
         }
     }
 
+    // Average the faceted normals and add them, for each point
+    for(let x = 0; x < numDivisions; x++) {
+        for(let y = 0; y < numDivisions; y++) {
+            let normal = vec3.create();
+
+            // Calculate the average
+            for(let i = 0; i < facetedNormals[x][y].length; i++) {
+                vec3.add(normal, normal, facetedNormals[x][y][i]);
+            }
+            vec3.scale(normal, normal, 1 / facetedNormals[x][y].length);
+
+            geom.normals.push(normal);
+        }
+    }
+
     // Create material
     let mat = new Material("vertexShader", "fragmentShader");
 
     // Create transform:
-    let transform = new Transform(center, rotation, vec3.fromValues(width, width, 1));
+    let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(width, width, 1));
 
     // Create mesh object
     let mesh = new MeshObject("Surface", transform, geom, mat);
@@ -654,7 +689,7 @@ function runWebGL(queue) {
     // ADD STUFF TO SCENE
 
     // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    let surface = makeSurface(10, 100, vec3.fromValues(0, 0, -0.5), vec3.fromValues(0, Math.PI / 2, 0));
+    let surface = makeSurface(10, 100, vec3.fromValues(0, 0, -0.5));
 
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);

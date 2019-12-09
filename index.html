@@ -55,12 +55,13 @@ attribute vec2 vert_texCoord;
   // transformation matrices
   uniform mat4 modelViewProjection;
 
-varying vec3 geom_normal;
+varying vec4 geom_normal;
 varying vec2 geom_texCoord;
 
   void main() {
       gl_Position = modelViewProjection * vec4(vert_position, 1.0);
 
+      geom_normal = vec4(vert_normal, 1.0);
       geom_texCoord = vert_texCoord;
   }
 </script>
