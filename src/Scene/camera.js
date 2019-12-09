@@ -24,23 +24,27 @@ class Camera extends SceneObject {
     }
 
     turnRight(speed) {
-      let moveAmount = vec3.create();
-      let dir = vec3.create();
-      vec3.copy(dir,scene.camera.defaultCamDir);
-      console.log(dir);
-      vec3.cross(dir, dir, scene.camera.camUp);
-      vec3.scale(moveAmount, dir, speed);
-      vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+      this.currentHeading += 0.1;
+      console.log(this.currentHeading);
+      // Bound the angle
+      if(this.currentHeading >= Math.PI * 2.0) {
+        this.currentHeading -= Math.PI * 2.0;
+      } else if(this.currentHeading <= 0) {
+        this.currentHeading += Math.PI * 2.0;
+      }
+      this.transform.rotation = vec3.fromValues(Math.sin(this.currentHeading), 0, Math.cos(this.currentHeading));
     }
 
     turnLeft(speed) {
-      let moveAmount = vec3.create();
-      let dir = vec3.create();
-      vec3.copy(dir,scene.camera.defaultCamDir);
-      vec3.cross(dir, dir, scene.camera.camUp);
-      vec3.scale(moveAmount, dir, speed);
-      vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-
+      this.currentHeading -= 0.1;
+      console.log(this.currentHeading);
+      // Bound the angle
+      if(this.currentHeading >= Math.PI * 2.0) {
+        this.currentHeading -= Math.PI * 2.0;
+      } else if(this.currentHeading <= 0) {
+        this.currentHeading += Math.PI * 2.0;
+      }
+      this.transform.rotation = vec3.fromValues(Math.sin(this.currentHeading), 0, Math.cos(this.currentHeading));
     }
 
     goForward(speed) {
