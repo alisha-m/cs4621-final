@@ -194,7 +194,22 @@ function getNormal(vert1, vert2, vert3) {
 }
 
 function getHeight(x, y) {
-    return 10 * noise.simplex2(x / 100, y / 100) + 2.0 * noise.simplex2(x / 10, y / 10);
+    let inputFactor = 1;
+    let outputFactor = 2;
+
+    // The factor by which each subsequent "octive" or added perlin noise level
+    // is squished by (to produce added granularity of the bumps)
+    let lacunarity = 2;
+
+    // The factor by which each subsequent octive is reduced in heig
+    let persistance = 0.5
+
+    let height = 0;
+    for(let i = 0; i < 3; i++) {
+        let coeff = inputFactor * Math.pow(lacunarity, i);
+        height += Math.pow(persistance, i) * noise.simplex2(coeff * x, coeff * y);
+    }
+    return outputFactor * height;
 }
 
 function makeSurface(width, numDivisions, center) {
@@ -285,7 +300,7 @@ function makeSurface(width, numDivisions, center) {
 
             // console.log(xCoord, yCoord);
 
-            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
+            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(xCoord, yCoord)));
             // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
             geom.uvs.push(vec2.fromValues(x % 2, y % 2));
             facetedNormals[x].push([]);
@@ -472,6 +487,8 @@ function draw(gl, program, shape, initialize) {
     gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
     gl.enableVertexAttribArray(program.vert_position);
     gl.vertexAttribPointer(program.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
+    gl.enableVertexAttribArray(program.vert_normal);
+    gl.vertexAttribPointer(program.vert_normal, 3, gl.FLOAT, false, shape.stride, shape.normalOffset);
     gl.enableVertexAttribArray(program.vert_texCoord);
     gl.vertexAttribPointer(program.vert_texCoord, 2, gl.FLOAT, false, shape.stride, shape.texCoordOffset);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -547,6 +564,8 @@ function getProjection(camera) {
 
 function getNormalMatrix(model, view) {
     let normalMat = mat3.create();
+    let modelView = mat4.create();
+    mat4.mul(modelView, view, model);
     mat3.normalFromMat4(normalMat, model);
     return normalMat;
 }
@@ -579,6 +598,7 @@ function updateMVP(gl, program, transform, camera) {
 
 function storeLocations(gl, program) {
     program.vert_position = gl.getAttribLocation(program, "vert_position");
+    program.vert_normal = gl.getAttribLocation(program, "vert_normal");
     program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
     program.model = gl.getUniformLocation(program, "model");
     program.view = gl.getUniformLocation(program, "view");
@@ -711,7 +731,7 @@ function runWebGL(queue) {
     // ADD STUFF TO SCENE
 
     // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    let surface = makeSurface(10, 100, vec3.fromValues(0, 0, -0.5));
+    let surface = makeSurface(10, 200, vec3.fromValues(0, 0, -0.5));
 
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);
@@ -784,7 +804,7 @@ function runWebGL(queue) {
                 // TODO: Don't assume that you're drawing a quad
                 let shape = createShape(gl, mesh.geometry);
 
-                scene.camera.landHeight = getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+                scene.camera.landHeight = 0.0; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
                 updateMVP(
                     gl, program,
                     mesh.transform,
