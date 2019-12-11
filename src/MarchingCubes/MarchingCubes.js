@@ -64,6 +64,10 @@ class MarchingCubes {
         return pointsIncluded;
     }
 
+    addTriangles(geometry, points, pointIncluded, cubePoints) {
+
+    }
+
     getGeometry(points, includedPoints) {
         
     }

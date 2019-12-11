@@ -9,7 +9,7 @@ class Camera extends SceneObject {
         this.aspectRatio = aspectRatio;
         this.near = near;
         this.far = far;
-        this.offsetZ = 5.0;
+        this.offsetZ = 2.0;
 
         this.defaultCamDir = vec3.fromValues(1, 0, 0);
         this.camUp = vec3.fromValues(0, 0, 1);
