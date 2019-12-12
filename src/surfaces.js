@@ -1,36 +1,44 @@
 function getHeight(x, y) {
-  let inputFactor = 1;
-  let outputFactor = 2;
+    let inputFactor = 0.05;
+    let outputFactor = 2.0;
 
-  // The factor by which each subsequent "octive" or added perlin noise level
-  // is squished by (to produce added granularity of the bumps)
-  let lacunarity = 2;
+    // The factor by which each subsequent "octive" or added perlin noise level
+    // is squished by (to produce added granularity of the bumps)
+    let lacunarity = 2.5;
 
-  // The factor by which each subsequent octive is reduced in heig
-  let persistance = 0.5;
+    // The factor by which each subsequent octive is reduced in height
+    let persistance = 0.4
 
-  let height = 0;
-  for(let i = 0; i < 3; i++) {
-      let coeff = inputFactor * Math.pow(lacunarity, i);
-      height += Math.pow(persistance, i) * noise.simplex2(coeff * x, coeff * y);
-  }
-  return outputFactor * height;
+    let height = 0;
+    for(let i = 0; i < 3; i++) {
+        let coeff = inputFactor * Math.pow(lacunarity, i);
+        height += Math.pow(persistance, i) * noise.simplex2(coeff * x, coeff * y);
+    }
+    return outputFactor * height;
 }
 
 // New Functions
 function getNormal(vert1, vert2, vert3) {
-  var a = vec3.create(), b = vec3.create(), normal = vec3.create();
+    var a = vec3.create(), b = vec3.create(), normal = vec3.create();
 
-  vec3.subtract(a, vert1, vert2);
-  vec3.subtract(b, vert1, vert3);
-  vec3.cross(normal, a, b);
-  vec3.normalize(normal, normal);
-  return normal;
+    vec3.subtract(a, vert1, vert2);
+    vec3.subtract(b, vert1, vert3);
+    vec3.cross(normal, a, b);
+    vec3.normalize(normal, normal);
+    return normal;
 }
 
-function makeSurface(width, numDivisions, center) {
-    
-
+/**
+ * Creates a square hilly terrain surface mesh object
+ * 
+ * @param width The sidelength of the square
+ * @param numDivisions The number of points per side of the mesh. This cannot be
+ *                     greater than 256 (because indices are stored as unsigned
+ *                     shorts)
+ * @param center The location of the center of the mesh
+ * @param surfaceShader The shader to be used for rendering the surface
+ */
+function makeSurface(width, numDivisions, center, surfaceShader) {
     let space = width / numDivisions;
 
     let geom = new Geometry();
@@ -100,13 +108,65 @@ function makeSurface(width, numDivisions, center) {
     }
 
     // Create material
-    let mat = new Material("vertexShader", "fragmentShader");
+    let material = new Material(surfaceShader);
 
     // Create transform:
-    let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(width, width, 1));
+    let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
 
     // Create mesh object
-    let mesh = new MeshObject("Surface", transform, geom, mat);
+    let mesh = new MeshObject("Surface", transform, geom, material);
+
+    return mesh;
+}
+
+function getLightBox(lightShader, color, position) {
+    // Create cube vertices
+
+    let geom = new Geometry();
+
+    geom.vertices.push(vec3.fromValues(-0.5, -0.5, -0.5)); // bottomLeftBack
+    geom.vertices.push(vec3.fromValues( 0.5, -0.5, -0.5)); // bottomRightBack
+    geom.vertices.push(vec3.fromValues( 0.5, -0.5,  0.5)); // bottomRightFront
+    geom.vertices.push(vec3.fromValues(-0.5, -0.5,  0.5)); // bottomLeftFront
+
+    geom.vertices.push(vec3.fromValues(-0.5, 0.5, -0.5)); // topLeftBack
+    geom.vertices.push(vec3.fromValues( 0.5, 0.5, -0.5)); // topRightBack
+    geom.vertices.push(vec3.fromValues( 0.5, 0.5,  0.5)); // topRightFront
+    geom.vertices.push(vec3.fromValues(-0.5, 0.5,  0.5)); // topLeftFront
+
+    // Bottom face
+    geom.faces.push(new Face(0, 1, 2));
+    geom.faces.push(new Face(0, 2, 3));
+
+    // Back face
+    geom.faces.push(new Face(0, 4, 1));
+    geom.faces.push(new Face(4, 5, 1));
+
+    // Right face
+    geom.faces.push(new Face(1, 5, 2));
+    geom.faces.push(new Face(2, 5, 6));
+
+    // Front face
+    geom.faces.push(new Face(2, 6, 3));
+    geom.faces.push(new Face(3, 6, 7));
+
+    // Left face
+    geom.faces.push(new Face(0, 3, 7));
+    geom.faces.push(new Face(0, 7, 4));
+
+    // Top face
+    geom.faces.push(new Face(4, 6, 5));
+    geom.faces.push(new Face(4, 7, 6));
+
+    // Create material
+    let material = new Material(lightShader);
+    material.setColor(color);
+
+    // Create transform:
+    let transform = new Transform(position, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
+
+    // Create mesh object
+    let mesh = new MeshObject("Quad", transform, geom, material);
 
     return mesh;
 }

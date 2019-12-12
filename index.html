@@ -47,7 +47,7 @@
 <script src="js/preloadjs-0.6.2.min.js"></script>
 
 <!-- Shaders -->
-<script id="vertexShader" type="x-shader/x-vertex">
+<script id="surfaceVertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;
 attribute vec3 vert_normal;
 attribute vec2 vert_texCoord;
@@ -70,8 +70,7 @@ void main() {
     texCoord = vert_texCoord;
 }
 </script>
-
-<script id="fragmentShader" type="x-shader/x-fragment"> 
+<script id="surfaceFragmentShader" type="x-shader/x-fragment"> 
 precision highp float;
 
 #define MAX_LIGHTS 8
@@ -98,7 +97,7 @@ float sqr(float i) {
 
 void main() {
     // Calling this allows everything to render... why?
-    texture2D(texture1, texCoord); 
+    // texture2D(texture1, texCoord); 
 
     vec3 color = ambientLight;
 
@@ -109,7 +108,31 @@ void main() {
         color += (diffuseCoeff * max(0.0, dot(normal, lightDir))) / (PI * sqr(distance(lightPositions[i], position))) * lightColors[i];
     }
 
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0); 
+    // gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
+}
+</script>
+
+<script id="lightVertexShader" type="x-shader/x-vertex">
+attribute vec3 vert_position;
+
+// transformation matrices
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+uniform mat3 normalMat;
+
+void main() {
+    gl_Position = projection * view * model * vec4(vert_position, 1.0);
+}
+</script>
+<script id="lightFragmentShader" type="x-shader/x-fragment"> 
+precision highp float;
+
+uniform vec3 lightColor;
+
+void main() {
+    gl_FragColor = vec4(lightColor, 1.0);
 }
 </script>
 
@@ -143,6 +166,7 @@ void main() {
 </script>
 <!-- Our own scripts -->
 <script src="src/perlin.js"></script>
+<script src="src/Scene/shader.js"></script>
 <script src="src/Scene/material.js"></script>
 <script src="src/Scene/geometry.js"></script>
 <script src="src/Scene/transform.js"></script>
