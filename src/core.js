@@ -17,45 +17,6 @@ function initializeWebGL(canvas) {
     return gl;
 }
 
-function createGlslProgram(gl, vertexShaderId, fragmentShaderId) {
-    var program = gl.createProgram();
-
-    gl.attachShader(program, createShader(gl, vertexShaderId));
-    gl.attachShader(program, createShader(gl, fragmentShaderId));
-    gl.linkProgram(program);
-    gl.validateProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        var infoLog = gl.getProgramInfoLog(program);
-        gl.deleteProgram(program);
-        throw new Error("An error occurred linking the program: " + infoLog);
-    } else {
-        return program;
-    }
-}
-
-function createShader(gl, shaderScriptId) {
-    var shaderScript = $("#" + shaderScriptId);
-    var shaderSource = shaderScript[0].text;
-    var shaderType = null;
-    if (shaderScript[0].type == "x-shader/x-vertex") {
-        shaderType = gl.VERTEX_SHADER;
-    } else if (shaderScript[0].type == "x-shader/x-fragment") {
-        shaderType = gl.FRAGMENT_SHADER;
-    } else {
-        throw new Error("Invalid shader type: " + shaderScript[0].type)
-    }
-    var shader = gl.createShader(shaderType);
-    gl.shaderSource(shader, shaderSource);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        var infoLog = gl.getShaderInfoLog(shader);
-        gl.deleteShader(shader);
-        throw new Error("An error occurred compiling the shader: " + infoLog);
-    } else {
-        return shader;
-    }
-}
-
 function isPowerOfTwo(val){
     return (val & (val - 1)) == 0;
 }
@@ -187,10 +148,20 @@ function createShape(gl, geometry) {
 
     let vertexData = [];
     let vertexCount = geometry.vertices.length;
+
+    let hasNormals = geometry.normals.length > 0;
+    let hasUVs = geometry.uvs.length > 0;
+
     for (let i = 0; i < vertexCount; i++) {
         vertexData.push(geometry.vertices[i][0], geometry.vertices[i][1], geometry.vertices[i][2]);
-        vertexData.push(geometry.normals[i][0], geometry.normals[i][1], geometry.normals[i][2]);
-        vertexData.push(geometry.uvs[i][0], geometry.uvs[i][1]);
+        
+        if(hasNormals) {
+            vertexData.push(geometry.normals[i][0], geometry.normals[i][1], geometry.normals[i][2]);
+        }
+
+        if(hasUVs) {
+            vertexData.push(geometry.uvs[i][0], geometry.uvs[i][1]);
+        }
     }
 
     let vertexArray = new Float32Array(vertexData);
@@ -213,10 +184,15 @@ function createShape(gl, geometry) {
     shape.vertexBuffer = vertexBuffer;
     shape.indexBuffer = indexBuffer;
     shape.size = indexArray.length;
-    shape.stride = 4 * (3 + 3 + 2);
+    shape.stride = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0))
     shape.positionOffset = 4 * 0;
-    shape.normalOffset = 4 * 3;
-    shape.texCoordOffset = 4 * (3 + 3);
+
+    if(hasNormals) shape.normalOffset = 4 * 3;
+    if (hasUVs) shape.texCoordOffset = 4 * (3 + (hasNormals ? 3 : 0));
+
+    shape.hasNormals = hasNormals;
+    shape.hasUVs = hasUVs;
+
     return shape;
 }
 
@@ -258,12 +234,20 @@ function draw(gl, program, shape, initialize) {
     initialize();
 
     gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
+
     gl.enableVertexAttribArray(program.vert_position);
     gl.vertexAttribPointer(program.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
-    gl.enableVertexAttribArray(program.vert_normal);
-    gl.vertexAttribPointer(program.vert_normal, 3, gl.FLOAT, false, shape.stride, shape.normalOffset);
-    gl.enableVertexAttribArray(program.vert_texCoord);
-    gl.vertexAttribPointer(program.vert_texCoord, 2, gl.FLOAT, false, shape.stride, shape.texCoordOffset);
+
+    if(shape.hasNormals) {
+        gl.enableVertexAttribArray(program.vert_normal);
+        gl.vertexAttribPointer(program.vert_normal, 3, gl.FLOAT, false, shape.stride, shape.normalOffset);
+    }
+
+    if(shape.hasUVs) {
+        gl.enableVertexAttribArray(program.vert_texCoord);
+        gl.vertexAttribPointer(program.vert_texCoord, 2, gl.FLOAT, false, shape.stride, shape.texCoordOffset);
+    }
+
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
@@ -385,21 +369,17 @@ function updateLights(gl, program, numLights, lightColors, lightPositions) {
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
     gl.uniform3fv(lightPositionsLocation, lightPositions);
-    // for(let i = 0; i < NUM_LIGHTS; i++) {
-    //     gl.uniform3f(gl.getUniformLocation(program, "lightColors[" + i + "]"), lightColors[i][0], lightColors[i][1], lightColors[i][2]);
-    //     gl.uniform3f(gl.getUniformLocation(program, "lightPositions[" + i + "]"), lightPositions[i][0], lightPositions[i][1], lightPositions[i][2]);
-    // }
 }
 
-function storeLocations(gl, program) {
-    program.vert_position = gl.getAttribLocation(program, "vert_position");
-    program.vert_normal = gl.getAttribLocation(program, "vert_normal");
-    program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
-    program.model = gl.getUniformLocation(program, "model");
-    program.view = gl.getUniformLocation(program, "view");
-    program.projection = gl.getUniformLocation(program, "projection");
-    program.normalMat = gl.getUniformLocation(program, "normalMat");
-}
+// function storeLocations(gl, program) {
+//     program.vert_position = gl.getAttribLocation(program, "vert_position");
+//     program.vert_normal = gl.getAttribLocation(program, "vert_normal");
+//     program.vert_texCoord = gl.getAttribLocation(program, "vert_texCoord");
+//     program.model = gl.getUniformLocation(program, "model");
+//     program.view = gl.getUniformLocation(program, "view");
+//     program.projection = gl.getUniformLocation(program, "projection");
+//     program.normalMat = gl.getUniformLocation(program, "normalMat");
+// }
 
 function lerpf(a, b, t) {
     return a + (b -a) * t;
@@ -468,9 +448,22 @@ function runWebGL(queue) {
     // END CUBE MARCHING
 
     var gl = initializeWebGL($("#webglCanvas"));
-    var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
 
-    storeLocations(gl, program);
+    var surfaceShader = new Shader(
+        gl,
+        "surfaceVertexShader",
+        "surfaceFragmentShader"
+    );
+
+    var lightShader = new Shader(
+        gl,
+        "lightVertexShader",
+        "lightFragmentShader"
+    );
+
+    // var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
+    // var program = surfaceShader.program;
+    // storeLocations(gl, program);
 
     // Set up lights
     let numLights = 3; // Currently, shader only allows for 8
@@ -486,41 +479,43 @@ function runWebGL(queue) {
         10.0, 0.0, 10.0,
     ];
 
+
+
     //Sky Box stuff
-    var box = createBox(gl, 100, 100);
-    var textures = [];
-    textures.push(queue.getResult("skyPosX", false));
-    textures.push(queue.getResult("skyNegX", false));
-    textures.push(queue.getResult("skyPosZ", false));
-    textures.push(queue.getResult("skyNegZ", false));
-    textures.push(queue.getResult("skyNegY", false)); // Switched order
-    textures.push(queue.getResult("skyPosY", false));
+    // var box = createBox(gl, 100, 100);
+    // var textures = [];
+    // textures.push(queue.getResult("skyPosX", false));
+    // textures.push(queue.getResult("skyNegX", false));
+    // textures.push(queue.getResult("skyPosZ", false));
+    // textures.push(queue.getResult("skyNegZ", false));
+    // textures.push(queue.getResult("skyNegY", false)); // Switched order
+    // textures.push(queue.getResult("skyPosY", false));
 
-    var cubeMap = createCubeMapTexture(gl, textures);
-    var skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
-    skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
-    skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
-    skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
-    skyBoxProgram.xform_viewMat = gl.getUniformLocation(skyBoxProgram, "xform_viewMat");
-    skyBoxProgram.xform_modelMat = gl.getUniformLocation(skyBoxProgram, "xform_modelMat");
-    skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+    // var cubeMap = createCubeMapTexture(gl, textures);
+    // var skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
+    // skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
+    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+    // skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
+    // skyBoxProgram.xform_viewMat = gl.getUniformLocation(skyBoxProgram, "xform_viewMat");
+    // skyBoxProgram.xform_modelMat = gl.getUniformLocation(skyBoxProgram, "xform_modelMat");
+    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
 
-    skyBoxProgram.draw = function (gl, shape, initialize) {
-        gl.useProgram(skyBoxProgram);
+    // skyBoxProgram.draw = function (gl, shape, initialize) {
+    //     gl.useProgram(skyBoxProgram);
 
-        initialize();
+    //     initialize();
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
-        gl.enableVertexAttribArray(skyBoxProgram.vert_position);
-        gl.vertexAttribPointer(skyBoxProgram.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    //     gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
+    //     gl.enableVertexAttribArray(skyBoxProgram.vert_position);
+    //     gl.vertexAttribPointer(skyBoxProgram.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
+    //     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
-        gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
+    //     gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
+    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-        // gl.useProgram(null);
-    };
+    //     // gl.useProgram(null);
+    // };
 
     // setup shaders
     let floorImage = scene.images.floorImage;
@@ -540,12 +535,11 @@ function runWebGL(queue) {
     // ADD STUFF TO SCENE
 
     // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    let surface = makeSurface(10, 200, vec3.fromValues(0, 0, -0.5));
-
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);
 
-    surface.material.texture = floorTexture;
+    let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
+    // surface.material.texture = floorTexture;
     scene.addSceneObject(surface);
 
     // STOP ADDING STUFF TO THE SCENE
@@ -555,72 +549,89 @@ function runWebGL(queue) {
     var deltaTime = 0;
 
     function updateWebGl() {
-      // Time STUFF
-      deltaTime = jQuery.now() - lastTime;
-      lastTime = jQuery.now();
+        // Time STUFF
+        deltaTime = jQuery.now() - lastTime;
+        lastTime = jQuery.now();
 
-      let drawBox = function(box, tex, proj, view, model) {
-          skyBoxProgram.draw(gl, box, function () {
-              if (skyBoxProgram.xform_projMat != null) {
-                  gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
-              }
-              if (skyBoxProgram.xform_viewMat != null) {
-                  gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
-              }
-              if (skyBoxProgram.xform_modelMat != null) {
-                  gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
-              }
-              if (skyBoxProgram.texture != null) {
-                  gl.activeTexture(gl.TEXTURE0);
-                  gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
-                  gl.uniform1i(skyBoxProgram.texture, 0);
-              }
-          });
-      }
-
-      // Draw skybox before depth testing
-      gl.clearDepth(1.0);
-      gl.clearColor(0.3, 0.7, 1.0, 1.0);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.disable(gl.DEPTH_TEST);
-
-      // Because the project uses coordinate system with Z going up/down
-      // var skyBoxModel = mat4.create();
-      // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
-      // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
-      //
-      // var skyBoxView = mat4.create();
-      // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
-      // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
-      //
-      // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
-      //
-      // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
-
-      gl.enable(gl.DEPTH_TEST);
-
-      // draw all scene objects
-      // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
-      // TODO: Don't assume the same program for every mesh, use program defined by mesh material
-      if (gl.getUniformLocation(program, "texture1") != null) {
-                for (let i = 0; i < scene.meshObjects.length; i++) {
-                let mesh = scene.meshObjects[i];
-
-                if (mesh.material.textureIdx > -1) {
-                    setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
+        let drawBox = function(box, tex, proj, view, model) {
+            skyBoxProgram.draw(gl, box, function () {
+                if (skyBoxProgram.xform_projMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
                 }
+                if (skyBoxProgram.xform_viewMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
+                }
+                if (skyBoxProgram.xform_modelMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
+                }
+                if (skyBoxProgram.texture != null) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+                    gl.uniform1i(skyBoxProgram.texture, 0);
+                }
+            });
+        }
 
-                // TODO: Don't assume that you're drawing a quad
-                let shape = createShape(gl, mesh.geometry);
+        // Draw skybox before depth testing
+        gl.clearDepth(1.0);
+        gl.clearColor(0.3, 0.7, 1.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
 
-                scene.camera.landHeight = -0.5 ; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+        // Because the project uses coordinate system with Z going up/down
+        // var skyBoxModel = mat4.create();
+        // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+        // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+        //
+        // var skyBoxView = mat4.create();
+        // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+        // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+        //
+        // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
+        //
+        // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+
+        gl.enable(gl.DEPTH_TEST);
+
+        let drawMesh = function(mesh) {
+            let shader = mesh.material.shader;
+            let program = shader.program;
+
+            if (mesh.material.textureIdx > -1) {
+                setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
+            }
+
+            // TODO: Don't assume that you're drawing a quad
+            let shape = createShape(gl, mesh.geometry);
+
+            scene.camera.landHeight = 0.5; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+            
+            if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
-                updateLights(gl, program, numLights, lightColors, lightPositions);
+                gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
 
-                draw(gl, program, shape, () => {});
+            } else if(shader == lightShader) {
+                updateMVP(gl, program, mesh.transform, scene.camera);
+                
+                gl.uniform3f(gl.getUniformLocation(program, "lightColor"), mesh.material.color)
+
             }
+
+            draw(gl, program, shape, () => {});
         }
+
+        // draw all scene objects
+        // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
+        // TODO: Don't assume the same program for every mesh, use program defined by mesh material
+        
+        // if (gl.getUniformLocation(program, "texture1") != null) {
+        for (let i = 0; i < scene.meshObjects.length; i++) {
+            drawMesh(scene.meshObjects[i]);
+        }
+        // }
 
         requestAnimationFrame(updateWebGl);
     }
