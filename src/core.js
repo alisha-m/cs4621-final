@@ -1,9 +1,9 @@
-var canvas = document.getElementById("webglCanvas");
+let canvas = document.getElementById("webglCanvas");
 
-const WIDTH = 50;
+let sqr = function(x) { return x * x; }
 
 function initializeWebGL(canvas) {
-    var gl = null;
+    let gl = null;
     try {
         gl = canvas[0].getContext("experimental-webgl");
         if (!gl) {
@@ -28,7 +28,7 @@ function loadTexture(gl, image, activeTexture) {
         // Step 1: Create the texture object and bind it to the given active texture
         gl.activeTexture(activeTexture);
 
-        var texture = gl.createTexture();
+        let texture = gl.createTexture();
         // Step 2: Bind the texture object to the "target" TEXTURE_2D
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // Step 3: (Optional) Tell WebGL that pixels are flipped vertically,
@@ -53,12 +53,12 @@ function loadTexture(gl, image, activeTexture) {
 // Sky box - Used this page: https://learnopengl.com/Advanced-OpenGL/Cubemaps
 // Images should be in order: posX, negX, posY, negY, posZ, negZ
 function createCubeMapTexture(gl, images) {
-    var texture = gl.createTexture();
+    let texture = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-    var texTargets = [
+    let texTargets = [
         gl.TEXTURE_CUBE_MAP_POSITIVE_X,
         gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
         gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
@@ -67,7 +67,7 @@ function createCubeMapTexture(gl, images) {
         gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
     ];
 
-    for(var i = 0; i < 6; i++) {
+    for(let i = 0; i < 6; i++) {
         gl.texImage2D(texTargets[i], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
     }
 
@@ -79,10 +79,10 @@ function createCubeMapTexture(gl, images) {
 }
 
 function createBox(gl, sizeX, sizeY) {
-    var shape = {};
-    var scale = Math.max(sizeX, sizeY)*0.5;
+    let shape = {};
+    let scale = Math.max(sizeX, sizeY)*0.5;
 
-    var positions = [
+    let positions = [
         -0.5*scale, -0.5*scale, -0.5*scale,
          0.5*scale, -0.5*scale, -0.5*scale,
         -0.5*scale,  0.5*scale, -0.5*scale,
@@ -94,7 +94,7 @@ function createBox(gl, sizeX, sizeY) {
          0.5*scale,  0.5*scale,  0.5*scale
     ];
 
-    var indices = [
+    let indices = [
         // Front
         2, 3, 7,
         2, 7, 6,
@@ -120,19 +120,19 @@ function createBox(gl, sizeX, sizeY) {
         0, 3, 2
     ];
 
-    var vertexData = [];
-    var vertexCount = positions.length / 3;
-    for (var i = 0; i < vertexCount; i++) {
+    let vertexData = [];
+    let vertexCount = positions.length / 3;
+    for (let i = 0; i < vertexCount; i++) {
         vertexData.push(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
     }
-    var vertexArray = new Float32Array(vertexData);
-    var vertexBuffer = gl.createBuffer();
+    let vertexArray = new Float32Array(vertexData);
+    let vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    var indexArray = new Uint16Array(indices);
-    var indexBuffer = gl.createBuffer();
+    let indexArray = new Uint16Array(indices);
+    let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -199,23 +199,23 @@ function createShape(gl, geometry) {
 }
 
 function createShapeOG(gl, shapeData) {
-    var shape = {};
+    let shape = {};
 
-    var vertexData = [];
-    var vertexCount = shapeData.positions.length / 3;
-    for (var i = 0; i < vertexCount; i++) {
+    let vertexData = [];
+    let vertexCount = shapeData.positions.length / 3;
+    for (let i = 0; i < vertexCount; i++) {
         vertexData.push(shapeData.positions[3 * i], shapeData.positions[3 * i + 1], shapeData.positions[3 * i + 2]);
         vertexData.push(shapeData.normals[3 * i], shapeData.normals[3 * i + 1], shapeData.normals[3 * i + 2]);
         vertexData.push(shapeData.texCoords[2 * i], shapeData.texCoords[2 * i + 1]);
     }
-    var vertexArray = new Float32Array(vertexData);
-    var vertexBuffer = gl.createBuffer();
+    let vertexArray = new Float32Array(vertexData);
+    let vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    var indexArray = new Uint16Array(shapeData.indices);
-    var indexBuffer = gl.createBuffer();
+    let indexArray = new Uint16Array(shapeData.indices);
+    let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -265,13 +265,13 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
     // Step 2: Bind the texture you want to use:
     gl.bindTexture(gl.TEXTURE_2D, texture);
     // Step 3: Set the texture uniform to the "index" of the texture unit you just activated
-    var textureLocation = gl.getUniformLocation(program, "texture1");
+    let textureLocation = gl.getUniformLocation(program, "texture1");
     gl.uniform1i(textureLocation, textureIdx);
 }
 
-var xAxis = vec3.fromValues(1, 0, 0);
-var yAxis = vec3.fromValues(0, 1, 0);
-var zAxis = vec3.fromValues(0, 0, 1);
+let xAxis = vec3.fromValues(1, 0, 0);
+let yAxis = vec3.fromValues(0, 1, 0);
+let zAxis = vec3.fromValues(0, 0, 1);
 
 function getModel(transform) {
     // translate
@@ -344,10 +344,10 @@ function updateMVP(gl, program, transform, camera) {
     let projectionMatrix = getProjection(camera);
     let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
 
-    var modelLocation = gl.getUniformLocation(program, "model");
-    var viewLocation = gl.getUniformLocation(program, "view");
-    var projectionLocation = gl.getUniformLocation(program, "projection");
-    var normalMatLocation = gl.getUniformLocation(program, "normalMat");
+    let modelLocation = gl.getUniformLocation(program, "model");
+    let viewLocation = gl.getUniformLocation(program, "view");
+    let projectionLocation = gl.getUniformLocation(program, "projection");
+    let normalMatLocation = gl.getUniformLocation(program, "normalMat");
 
     gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
@@ -364,9 +364,9 @@ lightPositions must be an array of 3 x numLights elements, where each set of 3
     values are a vec3 representing the position of that light source in space
 */
 function updateLights(gl, program, numLights, lightColors, lightPositions) {
-    var numLightsLocation = gl.getUniformLocation(program, "numLights");
-    var lightColorsLocation = gl.getUniformLocation(program, "lightColors");
-    var lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
+    let numLightsLocation = gl.getUniformLocation(program, "numLights");
+    let lightColorsLocation = gl.getUniformLocation(program, "lightColors");
+    let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
@@ -388,13 +388,13 @@ function lerpf(a, b, t) {
 }
 
 function doCubeMarchingStuff() {
-    let cubeMarhcer = new MarchingCubes();
+    let cubeMarcher = new MarchingCubes();
 }
 
 // Give camera default values for now
-var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
-var camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
-var scene = new Scene(camera);
+let camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
+let camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
+let scene = new Scene(camera);
 
 window.addEventListener("keydown", function (event) {
   let speed = 0.4;
@@ -413,22 +413,22 @@ window.addEventListener("keydown", function (event) {
   }
 },false);
 
-var timeElapsed = 0;
-var currently_moving = false;
-var counter =0;
+let timeElapsed = 0;
+let currently_moving = false;
+let counter =0;
 
-var mouseisDown = false;
+let mouseisDown = false;
 
 // Start and Run WebGL
 function startWebGL() {
     noise.seed(0);
 
     // get all images
-    var queue = new createjs.LoadQueue(true);
+    let queue = new createjs.LoadQueue(true);
     queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
     queue.loadFile({ id: "wall", src: "data/wall.jpg", type: "image" });
 
-    var path = "data/field-skyboxes/Meadow/";
+    let path = "data/field-skyboxes/Meadow/";
 
     queue.loadFile({ id: "skyPosX", src: (path + "posx.jpg"), type: "image" });
     queue.loadFile({ id: "skyNegX", src: (path + "negx.jpg"), type: "image" });
@@ -449,7 +449,9 @@ function runWebGL(queue) {
     doCubeMarchingStuff();
     // END CUBE MARCHING
 
-    var gl = initializeWebGL($("#webglCanvas"));
+    let gl = initializeWebGL($("#webglCanvas"));
+
+    // SET UP SHADERS
 
     let surfaceShader = new Shader(
         gl,
@@ -463,9 +465,57 @@ function runWebGL(queue) {
         "lightFragmentShader"
     );
 
-    // var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
-    // var program = surfaceShader.program;
-    // storeLocations(gl, program);
+    //Sky Box stuff
+    // let box = createBox(gl, 100, 100);
+    // let textures = [];
+    // textures.push(queue.getResult("skyPosX", false));
+    // textures.push(queue.getResult("skyNegX", false));
+    // textures.push(queue.getResult("skyPosZ", false));
+    // textures.push(queue.getResult("skyNegZ", false));
+    // textures.push(queue.getResult("skyNegY", false)); // Switched order
+    // textures.push(queue.getResult("skyPosY", false));
+
+    // let cubeMap = createCubeMapTexture(gl, textures);
+    // let skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
+    // skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
+    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+    // skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
+    // skyBoxProgram.xform_viewMat = gl.getUniformLocation(skyBoxProgram, "xform_viewMat");
+    // skyBoxProgram.xform_modelMat = gl.getUniformLocation(skyBoxProgram, "xform_modelMat");
+    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
+
+    // skyBoxProgram.draw = function (gl, shape, initialize) {
+    //     gl.useProgram(skyBoxProgram);
+
+    //     initialize();
+
+    //     gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
+    //     gl.enableVertexAttribArray(skyBoxProgram.vert_position);
+    //     gl.vertexAttribPointer(skyBoxProgram.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
+    //     gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
+    //     gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
+    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    //     // gl.useProgram(null);
+    // };
+    
+    let floorImage = scene.images.floorImage;
+    let wallImage = scene.images.wallImage;
+    let floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
+    let wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
+
+    // make camera and add it to the scene
+    let fov = Math.PI / 4;
+    let aspectRatio = canvas.width / canvas.height;
+    let near = 0.1;
+    let far = 100;
+
+    let camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
+    scene.camera = new Camera("Main Camera", camTransform, fov, aspectRatio, near, far);
+
+    // ADD STUFF TO SCENE
 
     // Set up lights
     let numLights = 0; // Currently, shader only allows for 8
@@ -484,7 +534,7 @@ function runWebGL(queue) {
     // makeLight( 0.0, 10.0, 20.0,  10.0, 10.0, 5.0);
     // makeLight( 0.0, 25.0, 50.0,  20.0, 0.0,  5.0);
 
-    for(let i = 0; i < 15; i++) {
+    for(let i = 0; i < 2; i++) {
         let x = Math.random() * WIDTH - (WIDTH / 2);
         let y = Math.random() * WIDTH - (WIDTH / 2);
         makeLight(
@@ -510,78 +560,116 @@ function runWebGL(queue) {
     //     ));
     // }
 
-
-    //Sky Box stuff
-    // var box = createBox(gl, 100, 100);
-    // var textures = [];
-    // textures.push(queue.getResult("skyPosX", false));
-    // textures.push(queue.getResult("skyNegX", false));
-    // textures.push(queue.getResult("skyPosZ", false));
-    // textures.push(queue.getResult("skyNegZ", false));
-    // textures.push(queue.getResult("skyNegY", false)); // Switched order
-    // textures.push(queue.getResult("skyPosY", false));
-
-    // var cubeMap = createCubeMapTexture(gl, textures);
-    // var skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
-    // skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
-    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
-    // skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
-    // skyBoxProgram.xform_viewMat = gl.getUniformLocation(skyBoxProgram, "xform_viewMat");
-    // skyBoxProgram.xform_modelMat = gl.getUniformLocation(skyBoxProgram, "xform_modelMat");
-    // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
-
-    // skyBoxProgram.draw = function (gl, shape, initialize) {
-    //     gl.useProgram(skyBoxProgram);
-
-    //     initialize();
-
-    //     gl.bindBuffer(gl.ARRAY_BUFFER, shape.vertexBuffer);
-    //     gl.enableVertexAttribArray(skyBoxProgram.vert_position);
-    //     gl.vertexAttribPointer(skyBoxProgram.vert_position, 3, gl.FLOAT, false, shape.stride, shape.positionOffset);
-    //     gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
-    //     gl.drawElements(gl.TRIANGLES, shape.size, gl.UNSIGNED_SHORT, 0);
-    //     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-    //     // gl.useProgram(null);
-    // };
-
-    // setup shaders
-    let floorImage = scene.images.floorImage;
-    let wallImage = scene.images.wallImage;
-    var floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
-    var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
-
-    // make camera and add it to the scene
-    let fov = Math.PI / 4;
-    let aspectRatio = canvas.width / canvas.height;
-    let near = 0.1;
-    let far = 100;
-
-    let camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
-    scene.camera = new Camera("Main Camera", camTransform, fov, aspectRatio, near, far);
-
-    // ADD STUFF TO SCENE
-
-    // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    // quad.material.texture = floorTexture;
-    // scene.addSceneObject(quad);
-
-    let surface = makeSurface(WIDTH, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
+    // let surface = makeSurface(WIDTH, 128, vec3.fromValues(0, 0, -0.5), surfaceShader);
     // surface.material.texture = floorTexture;
-    scene.addSceneObject(surface);
+    // scene.addSceneObject(surface);
+
+    let surfaces = [];
+    
+    for(let x = 0; x < 3; x++) {
+        surfaces.push([]);
+        for(let y = 0; y < 3; y++) {
+            surfaces[x].push(makeSurface((x - 1) * WIDTH, (y - 1) * WIDTH, surfaceShader));
+        }
+    }
+
+    // console.log(scene.camera.transform.position);
+
+    let surfaceCenter = [surfaces[1][1].transform.position[0], surfaces[1][1].transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
 
     // setup time stuff
-    var lastTime = jQuery.now();
-    var deltaTime = 0;
+    let lastTime = jQuery.now();
+    let deltaTime = 0
 
     function updateWebGl() {
-        // Time STUFF
+        // Update time
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
+
+        // If the current position is out of the following bounds
+        let xNegBound = scene.camera.transform.position[0] - surfaceCenter[0] < -WIDTH / 2;
+        let xPosBound = scene.camera.transform.position[0] - surfaceCenter[0] > WIDTH / 2;
+
+        let yNegBound = scene.camera.transform.position[1] - surfaceCenter[1] < -WIDTH / 2;
+        let yPosBound = scene.camera.transform.position[1] - surfaceCenter[1] > WIDTH / 2;
+
+        let newCenter = [surfaceCenter[0], surfaceCenter[1]];
+
+        if(xNegBound) {
+            newCenter[0] -= WIDTH;
+        } else if(xPosBound) {
+            newCenter[0] += WIDTH;
+        }
+        if(yNegBound) {
+            newCenter[1] -= WIDTH;
+        } else if(yPosBound) {
+            newCenter[1] += WIDTH;
+        }
+
+        let updateSurfaces = false;
+
+        // As the camera moves in a direction, shift everything in the other
+        // direction. For example, as it moves forward, shift everything back
+
+        // Spaces that must be created will be out of bounds, which will result in them
+        // being undefined. They will have to be recalculated
+        if(newCenter[0] < surfaceCenter[0]) {
+            for(let x = 2; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
+                for(let y = 0; y < 3; y++) {
+                    // Have to manually assign undefined, because surfaces[x - 1]
+                    // is undefined and therefore has no property [y]
+                    surfaces[x][y] = (x - 1 < 0 ? undefined : surfaces[x - 1][y]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        } else if(newCenter[0] > surfaceCenter[0]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    // Have to manually assign undefined, because surfaces[x + 1]
+                    // is undefined and therefore has no property [y]
+                    surfaces[x][y] = (x + 1 >= 3 ? undefined : surfaces[x + 1][y]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        }
+        
+        if(newCenter[1] < surfaceCenter[1]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 2; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
+                    surfaces[x][y] = (y - 1 < 0 ? undefined : surfaces[x][y - 1]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        } else if(newCenter[1] > surfaceCenter[1]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    surfaces[x][y] = (y + 1 >= 3 ? undefined : surfaces[x][y + 1]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        }
+
+        // Make new surfaces for each space that is undefined
+        if(updateSurfaces) {
+            // console.log(scene.camera.transform.position);
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    if(surfaces[x][y] === undefined) {
+                        surfaces[x][y] = makeSurface(
+                            surfaceCenter[0] + ((x - 1) * WIDTH),
+                            surfaceCenter[1] + ((y - 1) * WIDTH),
+                            surfaceShader
+                        );
+                    }
+                }
+            }
+        }
 
         let drawBox = function(box, tex, proj, view, model) {
             skyBoxProgram.draw(gl, box, function () {
@@ -609,15 +697,15 @@ function runWebGL(queue) {
         gl.disable(gl.DEPTH_TEST);
 
         // Because the project uses coordinate system with Z going up/down
-        // var skyBoxModel = mat4.create();
-        // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+        // let skyBoxModel = mat4.create();
+        // let rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
         // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
         //
-        // var skyBoxView = mat4.create();
-        // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+        // let skyBoxView = mat4.create();
+        // let skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
         // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
         //
-        // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
+        // let skyBoxProj = getProjection(fov, aspectRatio, near, far);
         //
         // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
 
@@ -645,6 +733,10 @@ function runWebGL(queue) {
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
 
+                // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
+
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
                 
@@ -662,6 +754,11 @@ function runWebGL(queue) {
         // if (gl.getUniformLocation(program, "texture1") != null) {
         for (let i = 0; i < scene.meshObjects.length; i++) {
             drawMesh(scene.meshObjects[i]);
+        }
+        for (let x = 0; x < 3; x++) {
+            for (let y = 0; y < 3; y++) {
+                drawMesh(surfaces[x][y]);
+            }
         }
         // }
 

@@ -1,3 +1,6 @@
+const WIDTH = 40;
+const NUM_DIVISIONS = 64;
+
 function getHeight(x, y) {
     let inputFactor = 0.05;
     let outputFactor = 2.0;
@@ -38,8 +41,12 @@ function getNormal(vert1, vert2, vert3) {
  * @param center The location of the center of the mesh
  * @param surfaceShader The shader to be used for rendering the surface
  */
-function makeSurface(width, numDivisions, center, surfaceShader) {
+function makeSurfaceAdvanced(width, numDivisions, center, surfaceShader) {
     let space = width / numDivisions;
+
+    // To account for the fact that n squares requires n + 1 points. Note that 
+    // the first row of points does not create any squares
+    numDivisions += 1;
 
     let geom = new Geometry();
 
@@ -57,7 +64,12 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
 
             // console.log(xCoord, yCoord);
 
-            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(xCoord, yCoord)));
+            geom.vertices.push(vec3.fromValues(
+                xCoord,
+                yCoord,
+                getHeight(center[0] + xCoord, center[1] + yCoord)
+            ));
+
             // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
             geom.uvs.push(vec2.fromValues(x % 2, y % 2));
             facetedNormals[x].push([]);
@@ -117,6 +129,15 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
     let mesh = new MeshObject("Surface", transform, geom, material);
 
     return mesh;
+}
+
+function makeSurface(x, y, shader) {
+    return makeSurfaceAdvanced(
+        WIDTH,
+        NUM_DIVISIONS,
+        vec3.fromValues(x, y, -0.5),
+        shader
+    );
 }
 
 function makeLightBox(color, position, size, lightShader) {
