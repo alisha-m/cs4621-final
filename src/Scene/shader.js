@@ -64,4 +64,8 @@ class Shader {
 
     // this.update = update;
   }
+
+  use = function(gl) {
+    gl.useProgram(this.program);
+  }
 }

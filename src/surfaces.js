@@ -119,7 +119,7 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
     return mesh;
 }
 
-function getLightBox(lightShader, color, position) {
+function makeLightBox(color, position, size, lightShader) {
     // Create cube vertices
 
     let geom = new Geometry();
@@ -163,7 +163,7 @@ function getLightBox(lightShader, color, position) {
     material.setColor(color);
 
     // Create transform:
-    let transform = new Transform(position, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
+    let transform = new Transform(position, vec3.fromValues(0, 0, 0), vec3.fromValues(size, size, size));
 
     // Create mesh object
     let mesh = new MeshObject("Quad", transform, geom, material);

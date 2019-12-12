@@ -1,5 +1,7 @@
 var canvas = document.getElementById("webglCanvas");
 
+const WIDTH = 50;
+
 function initializeWebGL(canvas) {
     var gl = null;
     try {
@@ -449,13 +451,13 @@ function runWebGL(queue) {
 
     var gl = initializeWebGL($("#webglCanvas"));
 
-    var surfaceShader = new Shader(
+    let surfaceShader = new Shader(
         gl,
         "surfaceVertexShader",
         "surfaceFragmentShader"
     );
 
-    var lightShader = new Shader(
+    let lightShader = new Shader(
         gl,
         "lightVertexShader",
         "lightFragmentShader"
@@ -466,19 +468,47 @@ function runWebGL(queue) {
     // storeLocations(gl, program);
 
     // Set up lights
-    let numLights = 3; // Currently, shader only allows for 8
+    let numLights = 0; // Currently, shader only allows for 8
 
-    let lightColors = [
-        100.0, 100.0, 100.0,
-        75.0, 0.0, 0.0,
-        0.0, 25.0, 50.0,
-    ];
-    let lightPositions = [
-        0.0, 0.0, 10.0,
-        0.0, 10.0, 10.0,
-        10.0, 0.0, 10.0,
-    ];
+    let lightColors = [];
+    let lightPositions = [];
 
+    function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
+        numLights++;
+        lightColors.push(colorR, colorG, colorB);
+        lightPositions.push(posX, posY, posZ)
+    }
+
+    //        Red   Green Blue   X     Y     Z
+    // makeLight(50.0, 50.0, 50.0,  10.0, 0.0,  5.0);
+    // makeLight( 0.0, 10.0, 20.0,  10.0, 10.0, 5.0);
+    // makeLight( 0.0, 25.0, 50.0,  20.0, 0.0,  5.0);
+
+    for(let i = 0; i < 15; i++) {
+        let x = Math.random() * WIDTH - (WIDTH / 2);
+        let y = Math.random() * WIDTH - (WIDTH / 2);
+        makeLight(
+            Math.random() * 50, Math.random() * 100, Math.random() * 150,
+            x, y, 10 * Math.random() + getHeight(x, y) + 3
+        );
+    }
+
+    // The following commented out loop will draw a cube for each point light
+
+    // for(let i = 0; i < numLights; i++) {
+    //     // Make the max coordinate of the color equal to 1, and scale down the
+    //     // others accordingly.
+    //     color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
+
+    //     let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
+    //     vec3.scale(color, color, 1.0 / maxColorChannel);
+
+    //     scene.addSceneObject(makeLightBox(
+    //         color,
+    //         vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+    //         lightShader
+    //     ));
+    // }
 
 
     //Sky Box stuff
@@ -538,7 +568,7 @@ function runWebGL(queue) {
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);
 
-    let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
+    let surface = makeSurface(WIDTH, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
     // surface.material.texture = floorTexture;
     scene.addSceneObject(surface);
 
@@ -597,6 +627,8 @@ function runWebGL(queue) {
             let shader = mesh.material.shader;
             let program = shader.program;
 
+            shader.use(gl);
+
             if (mesh.material.textureIdx > -1) {
                 setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
             }
@@ -616,7 +648,7 @@ function runWebGL(queue) {
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
                 
-                gl.uniform3f(gl.getUniformLocation(program, "lightColor"), mesh.material.color)
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
 
             }
 
