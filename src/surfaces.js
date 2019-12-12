@@ -7,7 +7,7 @@ function getHeight(x, y) {
   let lacunarity = 2;
 
   // The factor by which each subsequent octive is reduced in heig
-  let persistance = 0.5
+  let persistance = 0.5;
 
   let height = 0;
   for(let i = 0; i < 3; i++) {
