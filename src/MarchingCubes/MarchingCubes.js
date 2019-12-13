@@ -188,9 +188,8 @@ class MarchingCubes {
                 let point = vec3.clone(triangles[i][j]);
                 geometry.vertices.push(point);
 
-                // TODO: Add real normals and uvs lmao
+                // TODO: Add real uvs lmao
                 geometry.uvs.push(vec2.create());
-                geometry.normals.push(vec3.create());
             }
         }
         // create  faces from indices
@@ -198,7 +197,18 @@ class MarchingCubes {
             let face = new Face(indices[i], indices[i+1], indices[i+2]);
             geometry.faces.push(face);
         }
+        // calculate normals
+        for (let i = 0; i < geometry.faces.length; i++) {
+             let f = geometry.faces[i];
+             let i0 = f.indices[0];
+             let i1 = f.indices[1];
+             let i2 = f.indices[2];
 
+             let N = geometry.getNormal(i0, i1, i2);
+             for (let j = 0; j < 3; j++) {
+                 geometry.normals.push(N);
+             }
+        }
         console.log(geometry);
         return geometry;
     }
