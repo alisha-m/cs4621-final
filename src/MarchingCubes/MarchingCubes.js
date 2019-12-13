@@ -8,7 +8,7 @@ class MarchingCubes {
         this.pointNoiseValues = this.getPointNoiseValues(points);
         let includedPoints = this.getIncludedPoints(this.pointNoiseValues);
 
-        this.geometry = this.getGeometry(points, includedPoints);
+        this.geometries = this.getGeometries(points, includedPoints);
     }
     
     // gets the points from the single default chunk for now. a chunk is a cube of 100 uniformly distributed points
@@ -85,8 +85,18 @@ class MarchingCubes {
         return returnVec1;
     }
 
-    getGeometry(points, includedPoints) {
+    getGeometries(points, includedPoints) {
+        let geometries = [];
+        let chunk0 = vec3.create();
+        let geometry0 = this.getChunkGeometry(chunk0, points, includedPoints);
+
+        geometries.push(geometry0);
+        return geometries;
+    }
+
+    getChunkGeometry(chunk, points, includedPoints) {
         let triangles = [];
+
 
         for(let i = 0; i < points.length; i++) {
             let point = points[i];
@@ -98,6 +108,10 @@ class MarchingCubes {
             if (x >= pointsPerAxis - 1 || y >= pointsPerAxis - 1 || z >= pointsPerAxis - 1) {
                 continue;
             }
+
+            x += chunk[0] * CHUNK_LENGTH;
+            y += chunk[1] * CHUNK_LENGTH;
+            z += chunk[2] * CHUNK_LENGTH;
 
             // 8 corners of the current cube
             let cubeCorners = [
@@ -209,7 +223,6 @@ class MarchingCubes {
                  geometry.normals.push(N);
              }
         }
-        console.log(geometry);
         return geometry;
     }
 

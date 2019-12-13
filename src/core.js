@@ -388,7 +388,7 @@ function lerpf(a, b, t) {
 function doCubeMarchingStuff(material) {
     let cubeMarcher = new MarchingCubes();
     let transform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(3, 3, 3));
-    let cubeMarchMesh = new MeshObject("Cube March Mesh", transform, cubeMarcher.geometry, material);
+    let cubeMarchMesh = new MeshObject("Cube March Mesh", transform, cubeMarcher.geometries[0], material);
     
     scene.addSceneObject(cubeMarchMesh);
 }
