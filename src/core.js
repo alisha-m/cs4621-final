@@ -368,9 +368,14 @@ function updateLights(gl, program, numLights, lightColors, lightPositions) {
     let lightColorsLocation = gl.getUniformLocation(program, "lightColors");
     let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 
+    let ambientLightLocation = gl.getUniformLocation(program, "ambientLight");
+    console.log(ambientLightLocation);
+
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
     gl.uniform3fv(lightPositionsLocation, lightPositions);
+
+    gl.uniform3f(ambientLightLocation, ambientLight[0], ambientLight[1], ambientLight[2]);
 }
 
 // function storeLocations(gl, program) {
@@ -517,6 +522,10 @@ function runWebGL(queue) {
 
     // ADD STUFF TO SCENE
 
+    let ambientLight = vec3.fromValues(0.05, 0.1, 0.2);
+    let dirLightDirection = vec3.fromValues(1.0, 1.0, 1.0);
+    let dirLightColor = vec3.fromValues(0.2, 0.25, 0.3);
+
     // Set up lights
     let numLights = 0; // Currently, shader only allows for 8
 
@@ -534,31 +543,39 @@ function runWebGL(queue) {
     // makeLight( 0.0, 10.0, 20.0,  10.0, 10.0, 5.0);
     // makeLight( 0.0, 25.0, 50.0,  20.0, 0.0,  5.0);
 
-    for(let i = 0; i < 2; i++) {
-        let x = Math.random() * WIDTH - (WIDTH / 2);
-        let y = Math.random() * WIDTH - (WIDTH / 2);
+    // let maxColor = 0;
+
+    for(let i = 0; i < 5; i++) {
+        let x = (Math.random() * WIDTH - (WIDTH / 2));
+        let y = (Math.random() * WIDTH - (WIDTH / 2));
+        let r = Math.random() * 50;
+        let g = Math.random() * 100;
+        let b = Math.random() * 150;
+        // maxColor = Math.Math.max(Math.max(r, g), b);
         makeLight(
-            Math.random() * 50, Math.random() * 100, Math.random() * 150,
+            r, g, b,
             x, y, 10 * Math.random() + getHeight(x, y) + 3
         );
     }
 
     // The following commented out loop will draw a cube for each point light
 
-    // for(let i = 0; i < numLights; i++) {
-    //     // Make the max coordinate of the color equal to 1, and scale down the
-    //     // others accordingly.
-    //     color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
+    for(let i = 0; i < numLights; i++) {
+        // Make the max coordinate of the color equal to 1, and scale down the
+        // others accordingly.
+        color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
 
-    //     let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
-    //     vec3.scale(color, color, 1.0 / maxColorChannel);
+        let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
+        vec3.scale(color, color, 1.0 / maxColorChannel);
+        // vec3.scale(color, color, 1.0 / maxColor);
 
-    //     scene.addSceneObject(makeLightBox(
-    //         color,
-    //         vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
-    //         lightShader
-    //     ));
-    // }
+        scene.addSceneObject(makeLightBox(
+            color,
+            vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+            1,
+            lightShader
+        ));
+    }
 
     // let surface = makeSurface(WIDTH, 128, vec3.fromValues(0, 0, -0.5), surfaceShader);
     // surface.material.texture = floorTexture;
@@ -732,6 +749,10 @@ function runWebGL(queue) {
                 gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+
+                gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
 
                 // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
                 // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
