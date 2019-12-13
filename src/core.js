@@ -539,8 +539,8 @@ function runWebGL(queue) {
     // let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
     // // surface.material.texture = floorTexture;
     // scene.addSceneObject(surface);
-    let cubeMarchMaterial = new Material(lightShader);
-    cubeMarchMaterial.setColor(vec3.fromValues(1, 1, 1));
+    let cubeMarchMaterial = new Material(surfaceShader);
+    // cubeMarchMaterial.setColor(vec3.fromValues(1, 1, 1));
     doCubeMarchingStuff(cubeMarchMaterial);
 
     // STOP ADDING STUFF TO THE SCENE
