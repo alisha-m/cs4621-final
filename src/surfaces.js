@@ -105,7 +105,7 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
 
             geom.normals.push(normal);
         }
-    }
+    } 
 
     // Create material
     let material = new Material(surfaceShader);

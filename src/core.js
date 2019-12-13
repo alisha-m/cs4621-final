@@ -385,8 +385,12 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-function doCubeMarchingStuff() {
-    let cubeMarhcer = new MarchingCubes();
+function doCubeMarchingStuff(material) {
+    let cubeMarcher = new MarchingCubes();
+    let transform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(3, 3, 3));
+    let cubeMarchMesh = new MeshObject("Cube March Mesh", transform, cubeMarcher.geometry, material);
+    
+    scene.addSceneObject(cubeMarchMesh);
 }
 
 // Give camera default values for now
@@ -443,10 +447,6 @@ function startWebGL() {
 }
 
 function runWebGL(queue) {
-    // BEGIN CUBE MARCHING
-    doCubeMarchingStuff();
-    // END CUBE MARCHING
-
     var gl = initializeWebGL($("#webglCanvas"));
 
     var surfaceShader = new Shader(
@@ -478,8 +478,6 @@ function runWebGL(queue) {
         0.0, 10.0, 10.0,
         10.0, 0.0, 10.0,
     ];
-
-
 
     //Sky Box stuff
     // var box = createBox(gl, 100, 100);
@@ -538,9 +536,12 @@ function runWebGL(queue) {
     // quad.material.texture = floorTexture;
     // scene.addSceneObject(quad);
 
-    let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
-    // surface.material.texture = floorTexture;
-    scene.addSceneObject(surface);
+    // let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
+    // // surface.material.texture = floorTexture;
+    // scene.addSceneObject(surface);
+    let cubeMarchMaterial = new Material(lightShader);
+    cubeMarchMaterial.setColor(vec3.fromValues(1, 1, 1));
+    doCubeMarchingStuff(cubeMarchMaterial);
 
     // STOP ADDING STUFF TO THE SCENE
 
@@ -553,24 +554,24 @@ function runWebGL(queue) {
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
 
-        let drawBox = function(box, tex, proj, view, model) {
-            skyBoxProgram.draw(gl, box, function () {
-                if (skyBoxProgram.xform_projMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
-                }
-                if (skyBoxProgram.xform_viewMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
-                }
-                if (skyBoxProgram.xform_modelMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
-                }
-                if (skyBoxProgram.texture != null) {
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
-                    gl.uniform1i(skyBoxProgram.texture, 0);
-                }
-            });
-        }
+        // let drawBox = function(box, tex, proj, view, model) {
+        //     skyBoxProgram.draw(gl, box, function () {
+        //         if (skyBoxProgram.xform_projMat != null) {
+        //             gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
+        //         }
+        //         if (skyBoxProgram.xform_viewMat != null) {
+        //             gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
+        //         }
+        //         if (skyBoxProgram.xform_modelMat != null) {
+        //             gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
+        //         }
+        //         if (skyBoxProgram.texture != null) {
+        //             gl.activeTexture(gl.TEXTURE0);
+        //             gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+        //             gl.uniform1i(skyBoxProgram.texture, 0);
+        //         }
+        //     });
+        // }
 
         // Draw skybox before depth testing
         gl.clearDepth(1.0);
@@ -616,7 +617,7 @@ function runWebGL(queue) {
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
                 
-                gl.uniform3f(gl.getUniformLocation(program, "lightColor"), mesh.material.color)
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color)
 
             }
 

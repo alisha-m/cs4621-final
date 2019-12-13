@@ -20,7 +20,7 @@ class Material {
     }
 
     setColor(color) {
-        this.color = color
+        this.color = color;
 
         this.texture = null;
         this.textureIdx = -1;
