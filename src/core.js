@@ -386,11 +386,11 @@ function lerpf(a, b, t) {
 }
 
 function doCubeMarchingStuff(material) {
-    let cubeMarcher = new MarchingCubes();
-    let transform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(3, 3, 3));
-    let cubeMarchMesh = new MeshObject("Cube March Mesh", transform, cubeMarcher.geometries[0], material);
+    let cubeMarcher = new MarchingCubes(material);
     
-    scene.addSceneObject(cubeMarchMesh);
+    for (let i = 0; i < cubeMarcher.chunkMeshes.length; i++) {
+        scene.addSceneObject(cubeMarcher.chunkMeshes[i]);
+    }
 }
 
 // Give camera default values for now
@@ -605,7 +605,7 @@ function runWebGL(queue) {
             // TODO: Don't assume that you're drawing a quad
             let shape = createShape(gl, mesh.geometry);
 
-            scene.camera.landHeight = 0.5; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+            scene.camera.landHeight = 10; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
             
             if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);

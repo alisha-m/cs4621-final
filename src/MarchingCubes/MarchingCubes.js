@@ -3,16 +3,44 @@ var pointsPerAxis = 10;
 let isoLevel = 3;
 
 class MarchingCubes {
-    constructor() {
-        let points = this.getChunkPoints();
-        this.pointNoiseValues = this.getPointNoiseValues(points);
-        let includedPoints = this.getIncludedPoints(this.pointNoiseValues);
+    constructor(material) {
+        this.material = material;
 
-        this.geometries = this.getGeometries(points, includedPoints);
+        this.chunkMeshes = this.getChunkMeshes();
+    }
+
+    getChunkMeshes() {
+        let chunkMeshes = [];
+
+        // for each chunk
+        for (let x = 0; x < 3; x++) {
+            for (let y = 0; y < 3; y++) {
+                let chunk = vec3.fromValues(x, y, 0);
+                let points = this.getChunkPoints(chunk);
+                let pointNoiseValues = this.getPointNoiseValues(points);
+                let includedPoints = this.getIncludedPoints(pointNoiseValues);
+
+                let geometry = this.getChunkGeometry(chunk, points, pointNoiseValues, includedPoints);
+                console.log(pointNoiseValues);
+
+                let name = "Chunk: (" + x + ", " + y + ")";
+                let position = vec3.fromValues(chunk[0] * CHUNK_LENGTH, chunk[1] * CHUNK_LENGTH, chunk[2] * CHUNK_LENGTH);
+                let rotation = vec3.create();
+                let scale = vec3.fromValues(1, 1, 1);
+                let transform = new Transform(position, rotation, scale);
+
+                let mesh = new MeshObject(name, transform, geometry, this.material);
+                chunkMeshes.push(mesh);
+            }
+        }
+
+        return chunkMeshes;
     }
     
     // gets the points from the single default chunk for now. a chunk is a cube of 100 uniformly distributed points
-    getChunkPoints() {
+    getChunkPoints(chunk) {
+        let chunkOrigin = vec3.fromValues(chunk[0] * CHUNK_LENGTH, chunk[1] * CHUNK_LENGTH, chunk[2] * CHUNK_LENGTH);
+
         let points = [];
 
         for (let z = 0; z < pointsPerAxis; z++) {
@@ -20,6 +48,8 @@ class MarchingCubes {
                 for (let x = 0; x < pointsPerAxis; x++) {
                     let point = vec3.fromValues(x, y, z);
                     vec3.scale(point, point, pointsPerAxis / CHUNK_LENGTH);
+                    
+                    vec3.add(point, point, chunkOrigin);
 
                     points.push(point);
                 }
@@ -55,11 +85,11 @@ class MarchingCubes {
         return pointNoiseValues;
     }
     
-    getIncludedPoints() {
+    getIncludedPoints(pointNoiseValues) {
         let pointsIncluded = [];
 
-        for (let i = 0; i < this.pointNoiseValues.length; i++) {
-            if (this.pointNoiseValues[i] > isoLevel) {
+        for (let i = 0; i < pointNoiseValues.length; i++) {
+            if (pointNoiseValues[i] > isoLevel) {
                 pointsIncluded.push(true);
             } else {
                 pointsIncluded.push(false);
@@ -85,33 +115,19 @@ class MarchingCubes {
         return returnVec1;
     }
 
-    getGeometries(points, includedPoints) {
-        let geometries = [];
-        let chunk0 = vec3.create();
-        let geometry0 = this.getChunkGeometry(chunk0, points, includedPoints);
-
-        geometries.push(geometry0);
-        return geometries;
-    }
-
-    getChunkGeometry(chunk, points, includedPoints) {
+    getChunkGeometry(chunk, points, pointNoiseValues, includedPoints) {
         let triangles = [];
-
 
         for(let i = 0; i < points.length; i++) {
             let point = points[i];
-            let x = point[0];
-            let y = point[1];
-            let z = point[2];
+            let x = point[0] - chunk[0] * pointsPerAxis;
+            let y = point[1] - chunk[1] * pointsPerAxis;
+            let z = point[2] - chunk[2] * pointsPerAxis;
 
             // stop one point before the end because voxel includes neighboring points
             if (x >= pointsPerAxis - 1 || y >= pointsPerAxis - 1 || z >= pointsPerAxis - 1) {
                 continue;
             }
-
-            x += chunk[0] * CHUNK_LENGTH;
-            y += chunk[1] * CHUNK_LENGTH;
-            z += chunk[2] * CHUNK_LENGTH;
 
             // 8 corners of the current cube
             let cubeCorners = [
@@ -165,22 +181,22 @@ class MarchingCubes {
                 
                 let a0Point = cubeCorners[a0];
                 let a0Idx = cubeCornerIdxs[a0];
-                let a0NoiseValue = this.pointNoiseValues[a0Idx];
+                let a0NoiseValue = pointNoiseValues[a0Idx];
                 let b0Point = cubeCorners[b0];
                 let b0Idx = cubeCornerIdxs[b0];
-                let b0NoiseValue = this.pointNoiseValues[b0Idx];
+                let b0NoiseValue = pointNoiseValues[b0Idx];
                 let a1Point = cubeCorners[a1];
                 let a1Idx = cubeCornerIdxs[a1];
-                let a1NoiseValue = this.pointNoiseValues[a1Idx];
+                let a1NoiseValue = pointNoiseValues[a1Idx];
                 let b1Point = cubeCorners[b1];
                 let b1Idx = cubeCornerIdxs[b1];
-                let b1NoiseValue = this.pointNoiseValues[b1Idx];
+                let b1NoiseValue = pointNoiseValues[b1Idx];
                 let a2Point = cubeCorners[a2];
                 let a2Idx = cubeCornerIdxs[a2];
-                let a2NoiseValue = this.pointNoiseValues[a2Idx];
+                let a2NoiseValue = pointNoiseValues[a2Idx];
                 let b2Point = cubeCorners[b2];
                 let b2Idx = cubeCornerIdxs[b2];
-                let b2NoiseValue = this.pointNoiseValues[b2Idx];
+                let b2NoiseValue = pointNoiseValues[b2Idx];
 
                 let triangle = [];
                 triangle.push(this.interpolateVerts(a0Point, b0Point, a0NoiseValue, b0NoiseValue));
