@@ -15,7 +15,7 @@ class Shader {
    *               the current program, simply write "this.program" in the
    *               function
    */
-  constructor(gl, vertexShaderId, fragmentShaderId, hasVertAttrib = true, hasNormAttrib = true, hasUVAttrib = true) {
+  constructor(gl, vertexShaderId, fragmentShaderId, hasVertAttrib = true, hasNormAttrib = true, hasUVAttrib = true, otherAttribName = "") {
     this.program = gl.createProgram();
     this.uniforms = [];
 
@@ -60,6 +60,10 @@ class Shader {
     }
     if (hasUVAttrib) {
       this.program.vert_texCoord = gl.getAttribLocation(this.program, "vert_texCoord");
+    }
+    if (otherAttribName != "") {
+      this.program.vert_other = gl.getAttribLocation(this.program, otherAttribName);
+      this.program.numOtherCoords = 1;
     }
 
     // this.update = update;

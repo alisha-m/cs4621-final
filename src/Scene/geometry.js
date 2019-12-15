@@ -3,6 +3,7 @@ class Geometry {
         this.vertices = [];
         this.uvs = [];
         this.normals = [];
+        this.otherCoords = [];
         this.faces = [];
     }
 }

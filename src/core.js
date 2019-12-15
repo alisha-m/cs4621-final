@@ -153,6 +153,9 @@ function createShape(gl, geometry) {
 
     let hasNormals = geometry.normals.length > 0;
     let hasUVs = geometry.uvs.length > 0;
+    let hasOtherCoords = geometry.otherCoords.length > 0;
+
+    geometry.numOtherCoords = 1;
 
     for (let i = 0; i < vertexCount; i++) {
         vertexData.push(geometry.vertices[i][0], geometry.vertices[i][1], geometry.vertices[i][2]);
@@ -163,6 +166,10 @@ function createShape(gl, geometry) {
 
         if(hasUVs) {
             vertexData.push(geometry.uvs[i][0], geometry.uvs[i][1]);
+        }
+
+        if(hasOtherCoords) {
+            vertexData.push(geometry.otherCoords[i]); 
         }
     }
 
@@ -183,17 +190,20 @@ function createShape(gl, geometry) {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
+    shape.hasNormals = hasNormals;
+    shape.hasUVs = hasUVs;
+    shape.hasOtherCoords = hasOtherCoords;
+    if(hasOtherCoords) shape.numOtherCoords = 1; // geometry.numOtherCoords;
+
     shape.vertexBuffer = vertexBuffer;
     shape.indexBuffer = indexBuffer;
     shape.size = indexArray.length;
-    shape.stride = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0))
+    shape.stride = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0) + (hasOtherCoords ? shape.numOtherCoords : 0))
     shape.positionOffset = 4 * 0;
 
     if(hasNormals) shape.normalOffset = 4 * 3;
-    if (hasUVs) shape.texCoordOffset = 4 * (3 + (hasNormals ? 3 : 0));
-
-    shape.hasNormals = hasNormals;
-    shape.hasUVs = hasUVs;
+    if(hasUVs) shape.texCoordOffset = 4 * (3 + (hasNormals ? 3 : 0));
+    if(hasOtherCoords) shape.otherOffset = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0));
 
     return shape;
 }
@@ -248,6 +258,11 @@ function draw(gl, program, shape, initialize) {
     if(shape.hasUVs) {
         gl.enableVertexAttribArray(program.vert_texCoord);
         gl.vertexAttribPointer(program.vert_texCoord, 2, gl.FLOAT, false, shape.stride, shape.texCoordOffset);
+    }
+
+    if(shape.hasOtherCoords) {
+        gl.enableVertexAttribArray(program.vert_other);
+        gl.vertexAttribPointer(program.vert_other, 1, gl.FLOAT, false, shape.stride, shape.otherOffset);
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -456,6 +471,9 @@ function runWebGL(queue) {
 
     let gl = initializeWebGL($("#webglCanvas"));
 
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     // SET UP SHADERS
 
     let surfaceShader = new Shader(
@@ -463,6 +481,14 @@ function runWebGL(queue) {
         "surfaceVertexShader",
         "surfaceFragmentShader"
     );
+
+    // let waterShader = new Shader(
+    //     gl,
+    //     "waterVertexShader",
+    //     "waterFragmentShader",
+    //     true, true, true,
+    //     "vert_height"
+    // );
 
     let lightShader = new Shader(
         gl,
@@ -587,8 +613,12 @@ function runWebGL(queue) {
         surfaces.push([]);
         for(let y = 0; y < 3; y++) {
             surfaces[x].push(makeSurface((x - 1) * WIDTH, (y - 1) * WIDTH, surfaceShader));
+
+            // scene.meshObjects.push(makeWater((x - 1) * WIDTH, (y - 1) * WIDTH, waterShader));
         }
     }
+
+    
 
     // console.log(scene.camera.transform.position);
 
@@ -754,9 +784,26 @@ function runWebGL(queue) {
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
 
+                gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
+
                 // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
                 // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
                 // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
+
+            // } else if (shader == waterShader) {
+            //     updateMVP(gl, program, mesh.transform, scene.camera);
+
+            //     gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+
+            //     gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
+            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
+
+            //     // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
 
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
@@ -773,13 +820,13 @@ function runWebGL(queue) {
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         
         // if (gl.getUniformLocation(program, "texture1") != null) {
-        for (let i = 0; i < scene.meshObjects.length; i++) {
-            drawMesh(scene.meshObjects[i]);
-        }
         for (let x = 0; x < 3; x++) {
             for (let y = 0; y < 3; y++) {
                 drawMesh(surfaces[x][y]);
             }
+        }
+        for (let i = 0; i < scene.meshObjects.length; i++) {
+            drawMesh(scene.meshObjects[i]);
         }
         // }
 
