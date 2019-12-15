@@ -164,7 +164,7 @@ function makeWater(x, y, shader) {
     );
 }
 
-function makeLightBox(color, position, size, lightShader) {
+function makeBox(color, position, size, shader, rotation = vec3.create()) {
     // Create cube vertices
 
     let geom = new Geometry();
@@ -204,14 +204,14 @@ function makeLightBox(color, position, size, lightShader) {
     geom.faces.push(new Face(4, 7, 6));
 
     // Create material
-    let material = new Material(lightShader);
+    let material = new Material(shader);
     material.setColor(color);
 
     // Create transform:
-    let transform = new Transform(position, vec3.fromValues(0, 0, 0), vec3.fromValues(size, size, size));
+    let transform = new Transform(position, rotation, vec3.fromValues(size, size, size));
 
     // Create mesh object
-    let mesh = new MeshObject("Quad", transform, geom, material);
+    let mesh = new MeshObject("Box", transform, geom, material);
 
     return mesh;
 }

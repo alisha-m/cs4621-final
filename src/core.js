@@ -490,6 +490,12 @@ function runWebGL(queue) {
     //     "vert_height"
     // );
 
+    let skyboxShader = new Shader(
+        gl,
+        "skyboxVertexShader",
+        "skyboxFragmentShader"
+    );
+
     let lightShader = new Shader(
         gl,
         "lightVertexShader",
@@ -595,7 +601,7 @@ function runWebGL(queue) {
         vec3.scale(color, color, 1.0 / maxColorChannel);
         // vec3.scale(color, color, 1.0 / maxColor);
 
-        scene.addSceneObject(makeLightBox(
+        scene.addSceneObject(makeBox(
             color,
             vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
             1,
@@ -618,7 +624,23 @@ function runWebGL(queue) {
         }
     }
 
-    
+    let textures = [];
+    textures.push(queue.getResult("skyPosX", false));
+    textures.push(queue.getResult("skyNegX", false));
+    textures.push(queue.getResult("skyNegY", false)); // Switched order
+    textures.push(queue.getResult("skyPosY", false));
+    textures.push(queue.getResult("skyPosZ", false));
+    textures.push(queue.getResult("skyNegZ", false));
+
+    let cubeMapTexture = createCubeMapTexture(gl, textures);
+
+    let skyboxMesh = makeBox(
+        vec3.create(),
+        vec3.create(),
+        1,
+        skyboxShader,
+        vec3.fromValues(-Math.PI / 2.0, 0.0, 0.0)
+    );
 
     // console.log(scene.camera.transform.position);
 
@@ -737,29 +759,8 @@ function runWebGL(queue) {
             });
         }
 
-        // Draw skybox before depth testing
-        gl.clearDepth(1.0);
-        gl.clearColor(0.3, 0.7, 1.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.disable(gl.DEPTH_TEST);
-
-        // Because the project uses coordinate system with Z going up/down
-        // let skyBoxModel = mat4.create();
-        // let rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
-        // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
-        //
-        // let skyBoxView = mat4.create();
-        // let skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
-        // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
-        //
-        // let skyBoxProj = getProjection(fov, aspectRatio, near, far);
-        //
-        // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
-
-        gl.enable(gl.DEPTH_TEST);
-
-        let drawMesh = function(mesh) {
-            let shader = mesh.material.shader;
+        let drawMesh = function(mesh, shader = undefined) {
+            if(shader == undefined) shader = mesh.material.shader;
             let program = shader.program;
 
             shader.use(gl);
@@ -805,6 +806,33 @@ function runWebGL(queue) {
             //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
             //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
 
+            } else if(shader == skyboxShader) {
+                function updateSkyboxMVP(gl, program, transform, camera) {
+                    let modelMatrix = getModel(transform);
+                    
+                    let viewMatrix = mat4.create();
+                    mat4.lookAt(viewMatrix, vec3.create(), camera.getCamDir(), camera.camUp);
+
+                    let projectionMatrix = getProjection(camera);
+                    // let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
+                
+                    let modelLocation = gl.getUniformLocation(program, "model");
+                    let viewLocation = gl.getUniformLocation(program, "view");
+                    let projectionLocation = gl.getUniformLocation(program, "projection");
+                    // let normalMatLocation = gl.getUniformLocation(program, "normalMat");
+                
+                    gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
+                    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+                    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+                    // gl.uniformMatrix3fv(normalMatLocation, false, normalMatrix);
+                }
+
+                updateSkyboxMVP(gl, program, mesh.transform, scene.camera);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+                gl.uniform1i(gl.getUniformLocation(program, "skyBox"), 0);
+
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
                 
@@ -815,8 +843,43 @@ function runWebGL(queue) {
             draw(gl, program, shape, () => {});
         }
 
+        // Draw skybox before depth testing
+        gl.clearDepth(1.0);
+        gl.clearColor(0.3, 0.7, 1.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+
+        drawMesh(skyboxMesh, skyboxShader);
+
+        // skyboxShader.use(gl);
+
+        // let shape = createShape(gl, skyboxMesh.geometry);
+
+        // updateMVP(gl, skyboxShader.program, skyboxMesh.transform, scene.camera);
+
+        // gl.activeTexture(gl.TEXTURE0);
+        // gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+        // gl.uniform1i(gl.getUniformLocation(skyboxShader.program, "skyBox"), 0);
+
+        // drawMesh(gl, skyboxShader.program, shape, () => {});
+
+        // Because the project uses coordinate system with Z going up/down
+        // let skyBoxModel = mat4.create();
+        // let rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+        // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+        //
+        // let skyBoxView = mat4.create();
+        // let skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+        // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+        //
+        // let skyBoxProj = getProjection(fov, aspectRatio, near, far);
+        //
+        // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+
+        gl.enable(gl.DEPTH_TEST);
+
         // draw all scene objects
-        // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
+        // TODO: Don't assume a single texture for each object, don't assume it's stored in a letiable called "texture1"
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         
         // if (gl.getUniformLocation(program, "texture1") != null) {
