@@ -1,6 +1,6 @@
 var CHUNK_LENGTH = 10;
 var pointsPerAxis = 10;
-let isoLevel = 3;
+let isoLevel = 4;
 
 class MarchingCubes {
     constructor(material) {
@@ -13,20 +13,19 @@ class MarchingCubes {
         let chunkMeshes = [];
 
         // for each chunk
-        for (let x = 0; x < 3; x++) {
-            for (let y = 0; y < 3; y++) {
+        for (let x = 0; x < 1; x++) {
+            for (let y = 0; y < 1; y++) {
                 let chunk = vec3.fromValues(x, y, 0);
                 let points = this.getChunkPoints(chunk);
                 let pointNoiseValues = this.getPointNoiseValues(points);
                 let includedPoints = this.getIncludedPoints(pointNoiseValues);
 
                 let geometry = this.getChunkGeometry(chunk, points, pointNoiseValues, includedPoints);
-                console.log(pointNoiseValues);
 
                 let name = "Chunk: (" + x + ", " + y + ")";
-                let position = vec3.fromValues(chunk[0] * CHUNK_LENGTH, chunk[1] * CHUNK_LENGTH, chunk[2] * CHUNK_LENGTH);
+                let position = vec3.create();
                 let rotation = vec3.create();
-                let scale = vec3.fromValues(1, 1, 1);
+                let scale = vec3.fromValues(3, 3, 3);
                 let transform = new Transform(position, rotation, scale);
 
                 let mesh = new MeshObject(name, transform, geometry, this.material);
@@ -65,19 +64,20 @@ class MarchingCubes {
         let pointNoiseValues = [];
 
         // how many gradients are we combining?
-        let octaves = 3;
+        let octaves = 10;
         // how much does each successive gradient contribute?
-        let persistence = 0.5;
+        let persistence = 0.8;
         // how much does the frequency multiply by each succcessive gradient?
-        let lacunarity = 2;
+        let lacunarity = 1;
 
         // How tall should the highest peaks be?
         let heightRange = 10;
 
         for (let i = 0; i < points.length; i++) {
             let point = points[i];
+            let pointScale = 5;
             let pointNoiseValue = this.octaveSimplex(
-                point[0], point[1], point[2], 
+                point[0] / pointScale, point[1] / pointScale, point[2] / pointScale, 
                 octaves, persistence, lacunarity) * heightRange;
             pointNoiseValues.push(pointNoiseValue);
         }
@@ -89,7 +89,7 @@ class MarchingCubes {
         let pointsIncluded = [];
 
         for (let i = 0; i < pointNoiseValues.length; i++) {
-            if (pointNoiseValues[i] > isoLevel) {
+            if (pointNoiseValues[i] < isoLevel) {
                 pointsIncluded.push(true);
             } else {
                 pointsIncluded.push(false);
@@ -120,9 +120,9 @@ class MarchingCubes {
 
         for(let i = 0; i < points.length; i++) {
             let point = points[i];
-            let x = point[0] - chunk[0] * pointsPerAxis;
-            let y = point[1] - chunk[1] * pointsPerAxis;
-            let z = point[2] - chunk[2] * pointsPerAxis;
+            let x = point[0] - chunk[0] * CHUNK_LENGTH;
+            let y = point[1] - chunk[1] * CHUNK_LENGTH;
+            let z = point[2] - chunk[2] * CHUNK_LENGTH;
 
             // stop one point before the end because voxel includes neighboring points
             if (x >= pointsPerAxis - 1 || y >= pointsPerAxis - 1 || z >= pointsPerAxis - 1) {
