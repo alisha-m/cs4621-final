@@ -185,6 +185,8 @@ void main() {
 <script id="waterFragmentShader" type="x-shader/x-fragment"> 
 precision highp float;
 
+const vec3 WATER_COLOR = vec3(0.25, 0.40, 0.6);
+
 uniform samplerCube skybox;
 
 uniform vec3 camPos;
@@ -204,7 +206,12 @@ void main() {
     // Schlick approx
     float cosTheta = dot(vec3(normal.x, -normal.z, normal.y), ray);
 
-    gl_FragColor = vec4(textureCube(skybox, ray).rgb, pow(1.0 - cosTheta, 5.0) );
+    // So that underwater doesn't reflect the underside of the texture
+    if(cosTheta < 0.0) {
+        gl_FragColor = vec4(WATER_COLOR, 0.5);
+    } else {
+        gl_FragColor = vec4(textureCube(skybox, ray).rgb, max(pow(1.0 - cosTheta, 5.0), 0.0));
+    }
 }
 </script>
 
