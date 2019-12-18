@@ -536,11 +536,34 @@ function startWebGL() {
         scene.images.floorImage = queue.getResult("floor");
         scene.images.wallImage = queue.getResult("wall");
         scene.images.mossImage = queue.getResult("moss");
-        runWebGL(queue);
+
+        var objs = [];/* 
+        var promise = new Promise(function(resolve, reject) {
+
+            resolve = () => loadGeom("src/Objects/cube.obj");
+            // loadGeom("src/Objects/cube.obj")
+        });
+*/
+        $.ajax({
+            url: "src/Objects/cube.obj",
+            dataType: 'text'
+        }).done(function(data) {
+            var res = makeGeom(data);
+            console.log(res);
+            runWebGL(queue, res);
+        }).fail(function() {
+            alert('Failed to retrieve [' + filename + "]");
+        });
+/*
+        promise.then(function(data) {
+            console.log(data);
+            
+        });*/
+        
     }, this);
 }
 
-function runWebGL(queue) {
+function runWebGL(queue, geom) {
     // BEGIN CUBE MARCHING
     doCubeMarchingStuff();
     // END CUBE MARCHING
@@ -576,6 +599,12 @@ function runWebGL(queue) {
         gl,
         "lightVertexShader",
         "lightFragmentShader"
+    );
+
+    let objShader = new Shader( 
+        gl, 
+        "objVertexShader",
+        "objFragmentShader"
     );
 
     //Sky Box stuff
@@ -682,12 +711,25 @@ function runWebGL(queue) {
         vec3.scale(color, color, 1.0 / maxColorChannel);
         // vec3.scale(color, color, 1.0 / maxColor);
 
-        scene.addSceneObject(makeBox(
-            color,
+        // scene.addSceneObject(makeBox(
+        //     color,
+        //     vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+        //     1,
+        //     lightShader
+        // ));
+
+        let obj = makeMesh(
+            "cube",
             vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+            vec3.create(),
             1,
-            lightShader
-        ));
+            geom,
+            lightShader,
+            color
+        );
+        console.log(obj);
+
+        scene.addSceneObject(obj);     
     }
 
     // let surface = makeSurface(WIDTH, 128, vec3.fromValues(0, 0, -0.5), surfaceShader);
@@ -966,8 +1008,11 @@ function runWebGL(queue) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
-
             }
+            // } else if(shader == objShader) {
+
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
+            // }
 
             draw(gl, program, shape, () => {});
         }
