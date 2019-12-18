@@ -407,8 +407,12 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-function doCubeMarchingStuff() {
-    let cubeMarcher = new MarchingCubes();
+function doCubeMarchingStuff(material) {
+    let cubeMarcher = new MarchingCubes(material);
+    
+    for (let i = 0; i < cubeMarcher.chunkMeshes.length; i++) {
+        scene.addSceneObject(cubeMarcher.chunkMeshes[i]);
+    }
 }
 
 // Give camera default values for now
@@ -504,7 +508,7 @@ function runWebGL(queue) {
         "lightVertexShader",
         "lightFragmentShader"
     );
-
+  
     //Sky Box stuff
     // let box = createBox(gl, 100, 100);
     // let textures = [];
@@ -660,7 +664,7 @@ function runWebGL(queue) {
         // Update time
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
-
+      
         // If the current position is out of the following bounds
         let xNegBound = scene.camera.transform.position[0] - surfaceCenter[0] < -WIDTH / 2;
         let xPosBound = scene.camera.transform.position[0] - surfaceCenter[0] > WIDTH / 2;
@@ -776,7 +780,7 @@ function runWebGL(queue) {
             // TODO: Don't assume that you're drawing a quad
             let shape = createShape(gl, mesh.geometry);
 
-            scene.camera.landHeight = 0.5; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+            scene.camera.landHeight = 10; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
             
             if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
@@ -839,9 +843,7 @@ function runWebGL(queue) {
 
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
-                
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
-
             }
 
             draw(gl, program, shape, () => {});

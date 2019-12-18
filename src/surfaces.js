@@ -129,7 +129,7 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
 
             geom.normals.push(normal);
         }
-    }
+    } 
 
     // Create material
     let material = new Material(surfaceShader);
