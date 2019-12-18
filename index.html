@@ -145,6 +145,7 @@ void main() {
     }
 #endif
 
+#ifdef WATER
     //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
     gl_FragColor = (1.0 - waterAlpha) * (1.0 - shoreAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0) + shoreAlpha * vec4(SAND_COLOR,1.0);
 #endif
