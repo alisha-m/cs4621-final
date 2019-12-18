@@ -392,7 +392,7 @@ function updateLights(gl, program, numLights, lightColors, lightPositions) {
     let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 
     let ambientLightLocation = gl.getUniformLocation(program, "ambientLight");
-    console.log(ambientLightLocation);
+    //console.log(ambientLightLocation);
 
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
@@ -542,11 +542,34 @@ function startWebGL() {
         scene.images.floorImage = queue.getResult("floor");
         scene.images.wallImage = queue.getResult("wall");
         scene.images.mossImage = queue.getResult("moss");
-        runWebGL(queue);
+
+        var objs = [];/* 
+        var promise = new Promise(function(resolve, reject) {
+
+            resolve = () => loadGeom("src/Objects/cube.obj");
+            // loadGeom("src/Objects/cube.obj")
+        });
+*/
+        $.ajax({
+            url: "data/objects/mushroom.obj",
+            dataType: 'text'
+        }).done(function(data) {
+            var res = makeGeom(data);
+            //console.log(res);
+            runWebGL(queue, res);
+        }).fail(function() {
+            alert('Failed to retrieve [' + filename + "]");
+        });
+/*
+        promise.then(function(data) {
+            console.log(data);
+            
+        });*/
+        
     }, this);
 }
 
-function runWebGL(queue) {
+function runWebGL(queue, geom) {
     let gl = initializeWebGL($("#webglCanvas"));
 
     gl.enable(gl.BLEND);
@@ -584,6 +607,12 @@ function runWebGL(queue) {
         gl,
         "floatingIslandVertexShader",
         "floatingIslandFragmentShader"
+    );
+
+    let objShader = new Shader( 
+        gl, 
+        "objVertexShader",
+        "objFragmentShader"
     );
 
     //Sky Box stuff
@@ -690,13 +719,30 @@ function runWebGL(queue) {
         vec3.scale(color, color, 1.0 / maxColorChannel);
         // vec3.scale(color, color, 1.0 / maxColor);
 
-        scene.addSceneObject(makeBox(
-            color,
+        // scene.addSceneObject(makeBox(
+        //     color,
+        //     vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+        //     1,
+        //     lightShader
+        // ));
+
+        let obj = makeMesh(
+            "cube",
             vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+            vec3.create(),
             1,
-            lightShader
-        ));
+            geom,
+            lightShader,
+            color
+        );
+        //console.log(obj);
+
+        scene.addSceneObject(obj);     
     }
+
+    // BEGIN CUBE MARCHING
+    doCubeMarchingStuff(floatingIslandShader);
+    // END CUBE MARCHING
 
     // let surface = makeSurface(WIDTH, 128, vec3.fromValues(0, 0, -0.5), surfaceShader);
     // surface.material.texture = floorTexture;
@@ -707,15 +753,18 @@ function runWebGL(queue) {
     // If numMeshes = 5, this makes it go from -2 to 2 instead of 0 to 4
     let firstMeshOffset = ((numMeshes - 1) / 2);
 
-    let surfaces = [];
+    let chunks = [];
 
     for(let x = 0; x < numMeshes; x++) {
-        surfaces.push([]);
+        chunks.push([]);
         for(let y = 0; y < numMeshes; y++) {
-            // surfaces[x].push(undefined);
+            // chunks[x].push(undefined);
             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
-            surfaces[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture));
-            // if(surfaces[x][y] == undefined) {
+            chunks[x].push(new Chunk(
+                makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture),
+                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader))
+                );
+            // if(chunks[x][y] == undefined) {
             //     console.log("undefined!");
             // }
         }
@@ -742,7 +791,7 @@ function runWebGL(queue) {
     );
 
     centerCoord = Math.floor(numMeshes / 2.0);
-    let surfaceCenter = [surfaces[centerCoord][centerCoord].transform.position[0], surfaces[centerCoord][centerCoord].transform.position[1]];
+    let surfaceCenter = [chunks[centerCoord][centerCoord].surface.transform.position[0], chunks[centerCoord][centerCoord].surface.transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
 
@@ -789,18 +838,18 @@ function runWebGL(queue) {
         if(newCenter[0] < surfaceCenter[0]) {
             for(let x = numMeshes - 1; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
                 for(let y = 0; y < numMeshes; y++) {
-                    // Have to manually assign undefined, because surfaces[x - 1]
+                    // Have to manually assign undefined, because chunks[x - 1]
                     // is undefined and therefore has no property [y]
-                    surfaces[x][y] = (x - 1 < 0 ? undefined : surfaces[x - 1][y]);
+                    chunks[x][y] = (x - 1 < 0 ? undefined : chunks[x - 1][y]);
                 }
             }
             updateSurfaces = true;
         } else if(newCenter[0] > surfaceCenter[0]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    // Have to manually assign undefined, because surfaces[x + 1]
+                    // Have to manually assign undefined, because chunks[x + 1]
                     // is undefined and therefore has no property [y]
-                    surfaces[x][y] = (x + 1 >= numMeshes ? undefined : surfaces[x + 1][y]);
+                    chunks[x][y] = (x + 1 >= numMeshes ? undefined : chunks[x + 1][y]);
                 }
             }
             updateSurfaces = true;
@@ -809,32 +858,35 @@ function runWebGL(queue) {
         if(newCenter[1] < surfaceCenter[1]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = numMeshes - 1; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
-                    surfaces[x][y] = (y - 1 < 0 ? undefined : surfaces[x][y - 1]);
+                    chunks[x][y] = (y - 1 < 0 ? undefined : chunks[x][y - 1]);
                 }
             }
             updateSurfaces = true;
         } else if(newCenter[1] > surfaceCenter[1]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    surfaces[x][y] = (y + 1 >= numMeshes ? undefined : surfaces[x][y + 1]);
+                    chunks[x][y] = (y + 1 >= numMeshes ? undefined : chunks[x][y + 1]);
                 }
             }
             updateSurfaces = true;
         }
 
-        // Make new surfaces for each space that is undefined
+        // Make new chunks for each space that is undefined
         if(updateSurfaces) {
             surfaceCenter = newCenter;
 
             // console.log(scene.camera.transform.position);
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    if(surfaces[x][y] === undefined) {
-                        surfaces[x][y] = makeSurface(
+                    if(chunks[x][y] === undefined) {
+                        chunks[x][y] = new Chunk(
+                            makeSurface(
                             surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
                             surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
-                            surfaceShader
+                            surfaceShader),
+                            makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader)
                         );
+                        //console.log(chunks[x][y]);
                     }
                 }
             }
@@ -975,7 +1027,6 @@ function runWebGL(queue) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
-
             } else if (shader == floatingIslandShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
@@ -988,7 +1039,12 @@ function runWebGL(queue) {
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
 
                 gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
+
             }
+            // } else if(shader == objShader) {
+
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
+            // }
 
             draw(gl, program, shape, () => {});
         }
@@ -1035,7 +1091,11 @@ function runWebGL(queue) {
         // if (gl.getUniformLocation(program, "texture1") != null) {
         for (let x = 0; x < numMeshes; x++) {
             for (let y = 0; y < numMeshes; y++) {
-                drawMesh(surfaces[x][y]);
+                //console.log("chunk: " + chunks[x][y]);
+                drawMesh(chunks[x][y].surface, surfaceShader);
+                for(let k = 0;k<chunks[x][y].objects.length;k++) {
+                    drawMesh(chunks[x][y].objects[k],surfaceShader);
+                }
             }
         }
         for (let i = 0; i < scene.meshObjects.length; i++) {
