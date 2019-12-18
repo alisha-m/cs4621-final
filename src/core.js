@@ -415,8 +415,14 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-function doCubeMarchingStuff() {
-    let cubeMarcher = new MarchingCubes();
+function doCubeMarchingStuff(shader) {
+    let material = new Material(shader);
+    let cubeMarcher = new MarchingCubes(material);
+
+    for (let i = 0; i < cubeMarcher.chunkMeshes.length; i++) {
+        let mesh = cubeMarcher.chunkMeshes[i];
+        scene.addSceneObject(mesh);
+    }
 }
 
 // Give camera default values for now
@@ -508,7 +514,7 @@ function logMouse (event){
 
 let timeElapsed = 0;
 let currently_moving = false;
-let counter =0;
+let counter = 0;
 
 let mouseisDown = false;
 
@@ -541,10 +547,6 @@ function startWebGL() {
 }
 
 function runWebGL(queue) {
-    // BEGIN CUBE MARCHING
-    doCubeMarchingStuff();
-    // END CUBE MARCHING
-
     let gl = initializeWebGL($("#webglCanvas"));
 
     gl.enable(gl.BLEND);
@@ -576,6 +578,12 @@ function runWebGL(queue) {
         gl,
         "lightVertexShader",
         "lightFragmentShader"
+    );
+
+    let floatingIslandShader = new Shader(
+        gl,
+        "floatingIslandVertexShader",
+        "floatingIslandFragmentShader"
     );
 
     //Sky Box stuff
@@ -737,6 +745,10 @@ function runWebGL(queue) {
     let surfaceCenter = [surfaces[centerCoord][centerCoord].transform.position[0], surfaces[centerCoord][centerCoord].transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
+
+    // BEGIN CUBE MARCHING
+    doCubeMarchingStuff(floatingIslandShader);
+    // END CUBE MARCHING
 
     // setup time stuff
     let lastTime = jQuery.now();
@@ -964,6 +976,18 @@ function runWebGL(queue) {
 
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
 
+            } else if (shader == floatingIslandShader) {
+                updateMVP(gl, program, mesh.transform, scene.camera);
+
+                gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+
+                gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
+
+                gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
             }
 
             draw(gl, program, shape, () => {});

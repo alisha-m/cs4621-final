@@ -1,38 +1,58 @@
 var CHUNK_LENGTH = 10;
 var pointsPerAxis = 10;
-let isoLevel = 0;
+let isoLevel = 4;
+
+let onEdge = function(n) {
+    return n == 0 || n == pointsPerAxis - 1;
+};
 
 class MarchingCubes {
-    constructor() {
-        let points = this.getChunkPoints();
-        this.pointNoiseValues = this.getPointNoiseValues(points);
-        let includedPoints = this.getIncludedPoints(this.pointNoiseValues);
+    constructor(material) {
+        this.material = material;
 
-        let geometry = this.getGeometry(points, includedPoints);
+        this.chunkMeshes = this.getChunkMeshes();
+    }
 
-        // what percentage of points am i including
-        let includedCount = 0;
-        for (let i = 0; i < this.pointNoiseValues.length; i++) {
-            if (this.pointNoiseValues[i] > isoLevel) includedCount += 1;
+    getChunkMeshes() {
+        let chunkMeshes = [];
+
+        // for each chunk
+        for (let x = 0; x < 1; x++) {
+            for (let y = 0; y < 1; y++) {
+                let chunk = vec3.fromValues(x, y, 0);
+                let points = this.getChunkPoints(chunk);
+                let pointNoiseValues = this.getPointNoiseValues(points);
+                let includedPoints = this.getIncludedPoints(pointNoiseValues);
+
+                let geometry = this.getChunkGeometry(chunk, points, pointNoiseValues, includedPoints);
+
+                let name = "Chunk: (" + x + ", " + y + ")";
+                let position = vec3.fromValues(0, 0, 10);
+                let rotation = vec3.create();
+                let scale = vec3.fromValues(3, 3, 3);
+                let transform = new Transform(position, rotation, scale);
+
+                let mesh = new MeshObject(name, transform, geometry, this.material);
+                chunkMeshes.push(mesh);
+            }
         }
 
-        console.log("% of points included: " + includedCount / this.pointNoiseValues.length);
+        return chunkMeshes;
     }
     
     // gets the points from the single default chunk for now. a chunk is a cube of 100 uniformly distributed points
-    getChunkPoints() {
-        let points = [];
+    getChunkPoints(chunk) {
+        let chunkOrigin = vec3.fromValues(chunk[0] * CHUNK_LENGTH, chunk[1] * CHUNK_LENGTH, chunk[2] * CHUNK_LENGTH);
 
-        // bottom left corner of the chunk
-        let startPoint = vec3.fromValues(1, 1, 1);
-        vec3.scale(startPoint, startPoint, CHUNK_LENGTH);
+        let points = [];
 
         for (let z = 0; z < pointsPerAxis; z++) {
             for (let y = 0; y < pointsPerAxis; y++) {
                 for (let x = 0; x < pointsPerAxis; x++) {
                     let point = vec3.fromValues(x, y, z);
                     vec3.scale(point, point, pointsPerAxis / CHUNK_LENGTH);
-                    vec3.add(point, point, startPoint);
+                    
+                    vec3.add(point, point, chunkOrigin);
 
                     points.push(point);
                 }
@@ -48,21 +68,34 @@ class MarchingCubes {
         let pointNoiseValues = [];
 
         // how many gradients are we combining?
-        let octaves = 3;
+        let octaves = 10;
         // how much does each successive gradient contribute?
-        let persistence = 0.85;
+        let persistence = 0.8;
         // how much does the frequency multiply by each succcessive gradient?
-        let lacunarity = 1.5;
+        let lacunarity = 1;
 
         // How tall should the highest peaks be?
         let heightRange = 10;
 
-        for (let i = 0; i < points.length; i++) {
-            let point = points[i];
-            let pointNoiseValue = this.octaveSimplex(
-                point[0], point[1], point[2], 
-                octaves, persistence, lacunarity) * heightRange;
-            pointNoiseValues.push(pointNoiseValue);
+        let i = -1;
+        for (let x = 0; x < pointsPerAxis; x++) {
+            for (let y = 0; y < pointsPerAxis; y++) {
+                for (let z = 0; z < pointsPerAxis; z++) {
+                    i += 1;
+
+                    let point = points[i];
+                    let pointScale = 5;
+                    let pointNoiseValue = this.octaveSimplex(
+                        point[0] / pointScale, point[1] / pointScale, point[2] / pointScale, 
+                        octaves, persistence, lacunarity) * heightRange;
+
+                    if (onEdge(x) || onEdge(y) || onEdge(z)) {
+                        pointNoiseValue = isoLevel;
+                    }
+
+                    pointNoiseValues.push(pointNoiseValue);
+                }
+            }
         }
 
         return pointNoiseValues;
@@ -71,12 +104,18 @@ class MarchingCubes {
     getIncludedPoints(pointNoiseValues) {
         let pointsIncluded = [];
 
-        let CUTOFF = 16;
-        for (let i = 0; i < pointNoiseValues.length; i++) {
-            if (pointNoiseValues[i] > CUTOFF) {
-                pointsIncluded.push(true);
-            } else {
-                pointsIncluded.push(false);
+        let i = -1;
+        for (let x = 0; x < pointsPerAxis; x++) {
+            for (let y = 0; y < pointsPerAxis; y++) {
+                for (let z = 0; z < pointsPerAxis; z++) {
+                    i += 1;
+
+                    if (pointNoiseValues[i] > isoLevel) {
+                        pointsIncluded.push(false);
+                    } else {
+                        pointsIncluded.push(true);
+                    }
+                }
             }
         }
 
@@ -99,18 +138,18 @@ class MarchingCubes {
         return returnVec1;
     }
 
-    getGeometry(points, includedPoints) {
+    getChunkGeometry(chunk, points, pointNoiseValues, includedPoints) {
         let triangles = [];
 
         for(let i = 0; i < points.length; i++) {
             let point = points[i];
-            let x = point[0];
-            let y = point[1];
-            let z = point[2];
+            let x = point[0] - chunk[0] * CHUNK_LENGTH;
+            let y = point[1] - chunk[1] * CHUNK_LENGTH;
+            let z = point[2] - chunk[2] * CHUNK_LENGTH;
 
             // stop one point before the end because voxel includes neighboring points
             if (x >= pointsPerAxis - 1 || y >= pointsPerAxis - 1 || z >= pointsPerAxis - 1) {
-                return;
+                continue;
             }
 
             // 8 corners of the current cube
@@ -135,9 +174,6 @@ class MarchingCubes {
                 this.indexFromCoord(x, y + 1, z + 1)
             ];
 
-            console.log(this.indexFromCoord(x, y, z));
-            console.log("Num Points: " + points.length);
-
             // Calculate unique index for each cube configuration.
             // There are 256 possible values
             // A value of 0 means cube is entirely within surface; 255 entirely outside.
@@ -153,48 +189,81 @@ class MarchingCubes {
             if (!includedPoints[cubeCornerIdxs[7]]) cubeIndex |= 128;
 
             // Create triangles for current cube configuration
-            for (let j = 0; triangulation[cubeIndex][i] != -1; j+=3) {
+            for (let j = 0; triangulation[cubeIndex][j] != -1; j+=3) {
                 // Get indices of corner points A and B for each of the three edges
                 // of the cube that need to be joined to form the triangle.
-                let a0 = cornerIndexAFromEdge[triangulation[cubeIndex][i]];
-                let b0 = cornerIndexBFromEdge[triangulation[cubeIndex][i]];
 
-                let a1 = cornerIndexAFromEdge[triangulation[cubeIndex][i+1]];
-                let b1 = cornerIndexBFromEdge[triangulation[cubeIndex][i+1]];
+                let a0 = cornerIndexAFromEdge[triangulation[cubeIndex][j]];
+                let b0 = cornerIndexBFromEdge[triangulation[cubeIndex][j]];
 
-                let a2 = cornerIndexAFromEdge[triangulation[cubeIndex][i+2]];
-                let b2 = cornerIndexBFromEdge[triangulation[cubeIndex][i+2]];
+                let a1 = cornerIndexAFromEdge[triangulation[cubeIndex][j+1]];
+                let b1 = cornerIndexBFromEdge[triangulation[cubeIndex][j+1]];
+
+                let a2 = cornerIndexAFromEdge[triangulation[cubeIndex][j+2]];
+                let b2 = cornerIndexBFromEdge[triangulation[cubeIndex][j+2]];
                 
                 let a0Point = cubeCorners[a0];
                 let a0Idx = cubeCornerIdxs[a0];
-                let a0NoiseValue = this.pointNoiseValues[a0Idx];
+                let a0NoiseValue = pointNoiseValues[a0Idx];
                 let b0Point = cubeCorners[b0];
                 let b0Idx = cubeCornerIdxs[b0];
-                let b0NoiseValue = this.pointNoiseValues[b0Idx];
+                let b0NoiseValue = pointNoiseValues[b0Idx];
                 let a1Point = cubeCorners[a1];
                 let a1Idx = cubeCornerIdxs[a1];
-                let a1NoiseValue = this.pointNoiseValues[a1Idx];
+                let a1NoiseValue = pointNoiseValues[a1Idx];
                 let b1Point = cubeCorners[b1];
                 let b1Idx = cubeCornerIdxs[b1];
-                let b1NoiseValue = this.pointNoiseValues[b1Idx];
+                let b1NoiseValue = pointNoiseValues[b1Idx];
                 let a2Point = cubeCorners[a2];
                 let a2Idx = cubeCornerIdxs[a2];
-                let a2NoiseValue = this.pointNoiseValues[a2Idx];
+                let a2NoiseValue = pointNoiseValues[a2Idx];
                 let b2Point = cubeCorners[b2];
                 let b2Idx = cubeCornerIdxs[b2];
-                let b2NoiseValue = this.pointNoiseValues[b2Idx];
+                let b2NoiseValue = pointNoiseValues[b2Idx];
 
-                let triangle = {};
-                triangle.vertexA = this.interpolateVerts(a0Point, b0Point, a0NoiseValue, b0NoiseValue);
-                triangle.vertexB = this.interpolateVerts(a1Point, b1Point, a1NoiseValue, b1NoiseValue);
-                triangle.vertexC = this.interpolateVerts(a2Point, b2Point, a2NoiseValue, b2NoiseValue);
+                let triangle = [];
+                triangle.push(this.interpolateVerts(a0Point, b0Point, a0NoiseValue, b0NoiseValue));
+                triangle.push(this.interpolateVerts(a1Point, b1Point, a1NoiseValue, b1NoiseValue));
+                triangle.push(this.interpolateVerts(a2Point, b2Point, a2NoiseValue, b2NoiseValue));
 
                 triangles.push(triangle);
             }
         }
 
         // handle triangles and make a mesh
+        // store vertices in mesh geometry
+        // store indices for faces
+        let geometry = new Geometry();
+        let indices = [];
+        for (let i = 0; i < triangles.length; i++) {
+            for (let j = 0; j < 3; j++) {
+                indices.push(i * 3 + j);
+                let point = vec3.clone(triangles[i][j]);
+                geometry.vertices.push(point);
 
+                // TODO: Add real uvs lmao
+                geometry.uvs.push(vec2.create());
+            }
+        }
+        // create  faces from indices
+        for (let i = 0; i < indices.length; i+=3) {
+            let face = new Face(indices[i], indices[i+1], indices[i+2]);
+            geometry.faces.push(face);
+        }
+        // calculate normals
+        for (let i = 0; i < geometry.faces.length; i++) {
+             let f = geometry.faces[i];
+             let i0 = f.indices[0];
+             let i1 = f.indices[1];
+             let i2 = f.indices[2];
+
+             let N = geometry.getNormal(i0, i1, i2);
+             for (let j = 0; j < 3; j++) {
+                 geometry.normals.push(N);
+             }
+        }
+
+        return geometry;
     }
 
     // source: https://flafla2.github.io/2014/08/09/perlinnoise.html 

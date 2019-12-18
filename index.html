@@ -155,7 +155,83 @@ void main() {
 #endif
 }
 </script>
+<script id="floatingIslandVertexShader" type="x-shader/x-vertex">
+    attribute vec3 vert_position;
+    attribute vec3 vert_normal;
+    attribute vec2 vert_texCoord;
+    
+    // transformation matrices
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+    uniform mat3 normalMat;
+    
+    varying vec3 position;
+    varying vec3 normal;
+    varying vec2 texCoord;
+    varying float height;
+    
+    void main() {
+        gl_Position = projection * view * model * vec4(vert_position, 1.0);
+    
+        position = vec3(view * model * vec4(vert_position, 1.0));
+        normal = normalize(normalMat * vert_normal);
+        texCoord = vert_texCoord;
+    }
+</script>
+<script id="floatingIslandFragmentShader" type="x-shader/x-fragment">
+    precision highp float;
+    
+    #define MAX_LIGHTS 100
+    
+    const float PI = 3.14159265;
+    
+    uniform mat4 model;
+    uniform mat4 view;
+    
+    uniform int numLights;
+    uniform vec3 lightColors[MAX_LIGHTS];
+    uniform vec3 lightPositions[MAX_LIGHTS];
 
+    //uniform sampler2D texture1;
+    uniform vec4 scaleColor;
+    
+    varying vec3 position;
+    varying vec3 normal;
+    varying vec2 texCoord;
+    varying float height;
+    
+    uniform vec3 ambientLight;
+    uniform vec3 dirLightDirection;
+    uniform vec3 dirLightColor;
+    
+    const float DIFFUSE_COEFF = 1.0;
+    
+    void main() {
+        vec3 dLightDirection = vec3(view * vec4(dirLightDirection, 0.0));
+    
+        // Color starts with ambient and direcitonal light
+        vec3 color = ambientLight;
+        color += (DIFFUSE_COEFF * max(0.0, dot(normal, normalize(dLightDirection)))) * dirLightColor;
+    
+        for(int i = 0; i < MAX_LIGHTS; i++) {
+            if(i >= numLights) break;
+    
+            vec3 lightPos = vec3(view * vec4(lightPositions[i], 1.0));
+    
+            float dist = distance(lightPos, position);
+    
+            if(dist > 50.0) continue;
+            
+            vec3 lightDir = normalize(lightPos - position);
+    
+            color += (DIFFUSE_COEFF * max(0.0, dot(normal, lightDir))) / (PI * dist * dist) * lightColors[i];
+        }
+    
+        gl_FragColor = vec4(color, 1.0) * vec4(150.0/255.0, 75.0/255.0, 0.0, 1.0);
+        //gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
+    }
+</script>
 <script id="waterVertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;
 attribute vec3 vert_normal;
