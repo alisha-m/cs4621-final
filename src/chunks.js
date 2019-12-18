@@ -7,21 +7,25 @@ class Chunk {
 }
 
 const NUM_MUSHROOMS = 25;
-const INTERVAL_WIDTH = 1;
-const MUSH_THRESHOLD = 0.5;
+const INTERVAL_WIDTH = 10;
+const MUSH_THRESHOLD = 0.7;
 
-/*
-function makeObjects(width, center) {
+function makeObjects(width, center,geometry,shader) {
     numIntervals = Math.floor(width / INTERVAL_WIDTH);
     objects = [];
 
     for(let i = 0;i<numIntervals;i++){
         for(let j = 0;j<numIntervals;j++){
-            if(Noise.simplex2(center-width/2+INTERVAL_WIDTH*i,center-width/2+INTERVAL_WIDTH*j) > MUSH_THRESHOLD) {
-                objects.push()
+            let x = center - (width / 2) + INTERVAL_WIDTH * i;
+            let y = center - (width / 2) + INTERVAL_WIDTH * j;
+            if(noise.simplex2(x, y) > MUSH_THRESHOLD) {
+                objects.push(
+                    makeMesh("mushroom", vec3.fromValues(x, y, getHeight(x, y)+2.0), vec3.fromValues(Math.PI/2,0,0), 3.0, geometry, shader, vec3.fromValues(0.4,0.6,0.02))
+                )
             }
         }
     }
     
+    return objects;
 
-}   */
+}

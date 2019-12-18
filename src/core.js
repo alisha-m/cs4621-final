@@ -392,7 +392,7 @@ function updateLights(gl, program, numLights, lightColors, lightPositions) {
     let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 
     let ambientLightLocation = gl.getUniformLocation(program, "ambientLight");
-    console.log(ambientLightLocation);
+    //console.log(ambientLightLocation);
 
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
@@ -549,7 +549,7 @@ function startWebGL() {
             dataType: 'text'
         }).done(function(data) {
             var res = makeGeom(data);
-            console.log(res);
+            //console.log(res);
             runWebGL(queue, res);
         }).fail(function() {
             alert('Failed to retrieve [' + filename + "]");
@@ -727,7 +727,7 @@ function runWebGL(queue, geom) {
             lightShader,
             color
         );
-        console.log(obj);
+        //console.log(obj);
 
         scene.addSceneObject(obj);     
     }
@@ -749,8 +749,8 @@ function runWebGL(queue, geom) {
             // chunks[x].push(undefined);
             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
             chunks[x].push(new Chunk(
-                makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture)),
-                // makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH)
+                makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture),
+                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader))
                 );
             // if(chunks[x][y] == undefined) {
             //     console.log("undefined!");
@@ -867,8 +867,10 @@ function runWebGL(queue, geom) {
                             makeSurface(
                             surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
                             surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
-                            surfaceShader)
+                            surfaceShader),
+                            makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader)
                         );
+                        //console.log(chunks[x][y]);
                     }
                 }
             }
@@ -1060,7 +1062,11 @@ function runWebGL(queue, geom) {
         // if (gl.getUniformLocation(program, "texture1") != null) {
         for (let x = 0; x < numMeshes; x++) {
             for (let y = 0; y < numMeshes; y++) {
-                drawMesh(chunks[x][y].surface);
+                //console.log("chunk: " + chunks[x][y]);
+                drawMesh(chunks[x][y].surface, surfaceShader);
+                for(let k = 0;k<chunks[x][y].objects.length;k++) {
+                    drawMesh(chunks[x][y].objects[k],surfaceShader);
+                }
             }
         }
         for (let i = 0; i < scene.meshObjects.length; i++) {
