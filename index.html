@@ -66,11 +66,12 @@ varying float height;
 void main() {
     gl_Position = projection * view * model * vec4(vert_position, 1.0);
 
-    height = vert_position.z;
-
-    position = vec3(model * vec4(vert_position, 1.0));
+    position = vec3(view * model * vec4(vert_position, 1.0));
     normal = normalize(normalMat * vert_normal);
     texCoord = vert_texCoord;
+
+    // height = position.y;
+    height = vert_position.z;
 }
 </script>
 <script id="surfaceFragmentShader" type="x-shader/x-fragment"> 
@@ -83,6 +84,9 @@ precision highp float;
 const float PI = 3.14159265;
 
 uniform sampler2D texture1;
+
+uniform mat4 model;
+uniform mat4 view;
 
 uniform int numLights;
 uniform vec3 lightColors[MAX_LIGHTS];
@@ -97,9 +101,7 @@ uniform vec3 ambientLight;
 uniform vec3 dirLightDirection;
 uniform vec3 dirLightColor;
 
-uniform vec3 camPos;
-
-const vec3 WATER_COLOR = vec3(0.25, 0.45, 0.7);
+const vec3 WATER_COLOR = vec3(0.25, 0.40, 0.6);
 
 const float WATER_HEIGHT = 0.0;
 const float DEPTH_MURKINESS = 0.5;
@@ -108,18 +110,23 @@ const float BASE_MURKINESS = 0.5;
 const float DIFFUSE_COEFF = 1.0;
 
 void main() {
+
+    vec3 dLightDirection = vec3(view * vec4(dirLightDirection, 0.0));
+
     // Color starts with ambient and direcitonal light
     vec3 color = ambientLight;
-    color += (DIFFUSE_COEFF * max(0.0, dot(normal, normalize(dirLightDirection)))) * dirLightColor;
+    color += (DIFFUSE_COEFF * max(0.0, dot(normal, normalize(dLightDirection)))) * dirLightColor;
 
     for(int i = 0; i < MAX_LIGHTS; i++) {
         if(i >= numLights) break;
 
-        float dist = distance(lightPositions[i], position);
+        vec3 lightPos = vec3(view * vec4(lightPositions[i], 1.0));
+
+        float dist = distance(lightPos, position);
 
         if(dist > 50.0) continue;
         
-        vec3 lightDir = normalize(lightPositions[i] - position);
+        vec3 lightDir = normalize(lightPos - position);
 
         color += (DIFFUSE_COEFF * max(0.0, dot(normal, lightDir))) / (PI * dist * dist) * lightColors[i];
     }
@@ -132,98 +139,67 @@ void main() {
         // float throughWaterDistance = length(distBelowSurface * toCamVector);
         waterAlpha = min(DEPTH_MURKINESS * distBelowSurface + BASE_MURKINESS, 1.0);
     }
-#endif
 
-#ifdef WATER
     //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
     gl_FragColor = (1.0 - waterAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
-#endif
-#ifndef WATER
+#else
     //gl_FragColor = vec4(color, 1.0);
     gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
 #endif
 }
 </script>
 
-    <!-- <script id="waterVertexShader" type="x-shader/x-vertex">
-    attribute vec3 vert_position;
-    attribute vec3 vert_normal;
-    attribute vec2 vert_texCoord;
-    attribute float vert_height;
+<script id="waterVertexShader" type="x-shader/x-vertex">
+attribute vec3 vert_position;
+attribute vec3 vert_normal;
+attribute vec2 vert_texCoord;
+attribute float vert_height;
 
-    // transformation matrices
-    uniform mat4 model;
-    uniform mat4 view;
-    uniform mat4 projection;
-    uniform mat3 normalMat;
+// transformation matrices
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+uniform mat3 normalMat;
 
-    varying vec3 position;
-    varying vec3 normal;
-    varying vec2 texCoord;
-    varying float height;
+uniform mat4 rotateMat;
 
-    void main() {
-        gl_Position = projection * view * model * vec4(vert_position, 1.0);
+uniform vec3 camDir;
 
-        position = vec3(model * vec4(vert_position, 1.0));
-        normal = normalize(normalMat * vert_normal);
-        texCoord = vert_texCoord;
-        height = vert_height;
-    }
-    </script>
-    <script id="waterFragmentShader" type="x-shader/x-fragment"> 
-    precision highp float;
+varying vec3 position;
+varying vec3 normal;
 
-    #define MAX_LIGHTS 100
+void main() {
+    gl_Position = projection * view * model * vec4(vert_position, 1.0);
 
-    const float PI = 3.14159265;
+    position = vec3(model * vec4(vert_position, 1.0)); // vec3(view * model * vec4(vert_position, 1.0));
+    normal = normalize(normalMat * vert_normal);
+}
+</script>
+<script id="waterFragmentShader" type="x-shader/x-fragment"> 
+precision highp float;
 
-    uniform sampler2D texture1;
+uniform samplerCube skybox;
 
-    uniform int numLights;
-    uniform vec3 lightColors[MAX_LIGHTS];
-    uniform vec3 lightPositions[MAX_LIGHTS];
+uniform vec3 camPos;
 
-    varying vec3 position;
-    varying vec3 normal;
-    varying vec2 texCoord;
-    varying float height;
+varying vec3 position;
+varying vec3 normal;
 
-    uniform vec3 ambientLight;
-    uniform vec3 dirLightDirection;
-    uniform vec3 dirLightColor;
+void main() {
+    vec3 ray = normalize(position - camPos);
 
-    const float diffuseCoeff = 1.0;
+    // y and z coordinates are switched because z is up in world space, and
+    // y is up in eye space. This is being done in world space, because in view
+    // space, the reflections didn't rotate with the camera...
 
-    void main() {
-        // Color starts with ambient and direcitonal light
-        vec3 color = ambientLight;
-        color += (diffuseCoeff * max(0.0, dot(normal, normalize(dirLightDirection)))) * dirLightColor;
+    ray = vec3(ray.x, ray.z, ray.y);
 
-        for(int i = 0; i < MAX_LIGHTS; i++) {
-            if(i >= numLights) break;
+    // Schlick approx
+    float cosTheta = dot(vec3(normal.x, -normal.z, normal.y), ray);
 
-            float dist = distance(lightPositions[i], position);
-
-            if(dist > 50.0) continue;
-            
-            vec3 lightDir = normalize(lightPositions[i] - position);
-
-            color += (diffuseCoeff * max(0.0, dot(normal, lightDir))) / (PI * dist * dist) * lightColors[i];
-        }
-
-        float alpha = 0.5 * abs(height) + 0.1;
-        if(alpha > 1.0) {
-            alpha = 1.0;
-        }
-
-        gl_FragColor = vec4((0.5 * color) + (0.5 * vec3(0.4, 0.7, 1.0)), alpha);
-
-        // gl_FragColor = vec4(0.4, 0.7, 1.0, height > 0.0 ? height : -height);
-
-        // gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
-    }
-    </script> -->
+    gl_FragColor = vec4(textureCube(skybox, ray).rgb, pow(1.0 - cosTheta, 5.0) );
+}
+</script>
 
 <script id="skyboxVertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;
@@ -252,7 +228,6 @@ void main() {
 }
 </script>
 
-
 <script id="lightVertexShader" type="x-shader/x-vertex">
 attribute vec3 vert_position;
 
@@ -276,34 +251,6 @@ void main() {
 }
 </script>
 
-<script id="vertexShaderSkyBox" type="x-shader/x-vertex">
-    attribute vec3 vert_position;
-
-    // TODO: Add P, V, M matrices
-    uniform mat4 xform_projMat;
-    uniform mat4 xform_viewMat;
-    uniform mat4 xform_modelMat;
-
-    varying vec3 texCoords;
-
-    void main() {
-        // TODO: Multiply by P*V*M
-        texCoords = vert_position;
-        gl_Position = xform_projMat * xform_viewMat * xform_modelMat * vec4(vert_position, 1.0);
-    }
-</script>
-
-<script id="fragmentShaderSkyBox" type="x-shader/x-fragment">
-    precision highp float;
-
-    varying vec3 texCoords;
-
-    uniform samplerCube skyBox;
-
-    void main() {
-        gl_FragColor = textureCube(skyBox, texCoords);
-    }
-</script>
 <!-- Our own scripts -->
 <script src="src/perlin.js"></script>
 <script src="src/Scene/shader.js"></script>
