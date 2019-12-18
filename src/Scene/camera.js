@@ -82,6 +82,35 @@ class Camera extends SceneObject {
       //New height
       //scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
     }
+    goLeft(speed) {
+      let moveAmount = vec3.create();
+      let left = vec3.create();
+      vec3.cross(left, scene.camera.getCamDir(), scene.camera.camUp);
+      vec3.negate(left, left);
+      vec3.scale(moveAmount, left, speed);
+      vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    }
+
+    goUp(speed) {
+      let moveAmount = vec3.create();
+      vec3.scale(moveAmount, scene.camera.camUp, speed);
+      vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    }
+    goDown(speed) {
+      let moveAmount = vec3.create();
+      let down = vec3.create();
+      vec3.negate(down, scene.camera.camUp);
+      vec3.scale(moveAmount, down, speed);
+      vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    }
+
+    goRight(speed) {
+      let moveAmount = vec3.create();
+      let right = vec3.create();
+      vec3.cross(right, scene.camera.getCamDir(), scene.camera.camUp);
+      vec3.scale(moveAmount, right, speed);
+      vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
+    }
 
     goBackward(speed) {
       let moveAmount = vec3.create();

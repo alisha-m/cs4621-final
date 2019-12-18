@@ -433,10 +433,16 @@ window.addEventListener("keydown", function (event) {
     scene.camera.goBackward(speed);
   }
   if (event.which == 65 || event.which == 37) { //a or left arrow, move left
-    scene.camera.turnLeft(turnSpeed);
+    scene.camera.goLeft(speed);
   }
   if (event.which == 68 || event.which == 39) { //d or right arrow, move right
-    scene.camera.turnRight(turnSpeed);
+    scene.camera.goRight(speed);
+  }
+  if (event.which == 69) { //d or right arrow, move right
+    scene.camera.goUp(speed);
+  }
+  if (event.which == 16) { //d or right arrow, move right
+    scene.camera.goDown(speed);
   }
 },false);
 
