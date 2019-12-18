@@ -13,17 +13,14 @@ function makeObjects(width, center, geometry, shader) {
     intervalWidth = Math.floor(width / NUM_INTERVALS);
     objects = [];
 
-    console.log("width: " + width, "center: " + center);
-
     for(let i = 0; i < NUM_INTERVALS; i++) {
         for(let j = 0; j < NUM_INTERVALS; j++) {
             let x = center[0] - (width / 2) + intervalWidth * i;
             let y = center[1] - (width / 2) + intervalWidth * j;
             let n = noise.simplex2(x, y);
             if(n > MUSH_THRESHOLD && getHeight(x, y) > 0.0) {
-                let scale = n - MUSH_THRESHOLD * 0.75 + 0.25;
+                let scale = (n - MUSH_THRESHOLD) * 0.9 + 0.1;
 
-                console.log(x, y);
                 objects.push(makeMesh(
                     "mushroom",
                     vec3.fromValues(x, y, getHeight(x, y) + scale),
@@ -31,7 +28,7 @@ function makeObjects(width, center, geometry, shader) {
                     scale,
                     geometry,
                     shader,
-                    vec3.fromValues(0.4, 0.6, 0.02))
+                    vec3.fromValues(Math.random() * 0.333, Math.random() * 0.667, Math.random()))
                 )
             }
         }

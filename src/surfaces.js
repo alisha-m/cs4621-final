@@ -1,5 +1,5 @@
 const WIDTH = 40;
-const NUM_DIVISIONS = 64;
+const NUM_DIVISIONS = 48;
 
 function getHeight(x, y) {
     let inputFactor = 0.05;

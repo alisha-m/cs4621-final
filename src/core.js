@@ -405,7 +405,7 @@ function doCubeMarchingStuff(shader) {
 
     for (let i = 0; i < cubeMarcher.chunkMeshes.length; i++) {
         let mesh = cubeMarcher.chunkMeshes[i];
-        // scene.addSceneObject(mesh);
+        scene.addSceneObject(mesh);
     }
 }
 
@@ -533,7 +533,7 @@ function startWebGL() {
         });
 */
         $.ajax({
-            url: "data/objects/mushroom_free3d.obj",
+            url: "data/objects/mushroom.obj",
             dataType: 'text'
         }).done(function(data) {
             var res = makeGeom(data);
@@ -962,9 +962,9 @@ function runWebGL(queue, geom) {
             } else if (shader == noTexShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
-                gl.uniform1i(gl.getUniformLocation(program, "numLights"), 0);
-                gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), []);
-                gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), []);
+                // gl.uniform1i(gl.getUniformLocation(program, "numLights"), 0);
+                // gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), []);
+                // gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), []);
 
                 gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
