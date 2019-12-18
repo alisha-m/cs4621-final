@@ -2,6 +2,10 @@ var CHUNK_LENGTH = 10;
 var pointsPerAxis = 10;
 let isoLevel = 4;
 
+let onEdge = function(n) {
+    return n == 0 || n == pointsPerAxis - 1;
+};
+
 class MarchingCubes {
     constructor(material) {
         this.material = material;
@@ -73,13 +77,25 @@ class MarchingCubes {
         // How tall should the highest peaks be?
         let heightRange = 10;
 
-        for (let i = 0; i < points.length; i++) {
-            let point = points[i];
-            let pointScale = 5;
-            let pointNoiseValue = this.octaveSimplex(
-                point[0] / pointScale, point[1] / pointScale, point[2] / pointScale, 
-                octaves, persistence, lacunarity) * heightRange;
-            pointNoiseValues.push(pointNoiseValue);
+        let i = -1;
+        for (let x = 0; x < pointsPerAxis; x++) {
+            for (let y = 0; y < pointsPerAxis; y++) {
+                for (let z = 0; z < pointsPerAxis; z++) {
+                    i += 1;
+
+                    let point = points[i];
+                    let pointScale = 5;
+                    let pointNoiseValue = this.octaveSimplex(
+                        point[0] / pointScale, point[1] / pointScale, point[2] / pointScale, 
+                        octaves, persistence, lacunarity) * heightRange;
+
+                    if (onEdge(x) || onEdge(y) || onEdge(z)) {
+                        pointNoiseValue = isoLevel;
+                    }
+
+                    pointNoiseValues.push(pointNoiseValue);
+                }
+            }
         }
 
         return pointNoiseValues;
@@ -88,11 +104,18 @@ class MarchingCubes {
     getIncludedPoints(pointNoiseValues) {
         let pointsIncluded = [];
 
-        for (let i = 0; i < pointNoiseValues.length; i++) {
-            if (pointNoiseValues[i] < isoLevel) {
-                pointsIncluded.push(true);
-            } else {
-                pointsIncluded.push(false);
+        let i = -1;
+        for (let x = 0; x < pointsPerAxis; x++) {
+            for (let y = 0; y < pointsPerAxis; y++) {
+                for (let z = 0; z < pointsPerAxis; z++) {
+                    i += 1;
+
+                    if (pointNoiseValues[i] > isoLevel) {
+                        pointsIncluded.push(false);
+                    } else {
+                        pointsIncluded.push(true);
+                    }
+                }
             }
         }
 
@@ -239,6 +262,7 @@ class MarchingCubes {
                  geometry.normals.push(N);
              }
         }
+
         return geometry;
     }
 
