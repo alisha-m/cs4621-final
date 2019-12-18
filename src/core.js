@@ -619,17 +619,17 @@ function runWebGL(queue, geom) {
     let dirLightDirection = vec3.fromValues(0.5, 1.0, 0.5);
     let dirLightColor = vec3.fromValues(0.45, 0.5, 0.6);
 
-    // Set up lights
-    let numLights = 0; // Currently, shader only allows for 8
+    // // Set up lights
+    // let numLights = 0; // Currently, shader only allows for 8
 
-    let lightColors = [];
-    let lightPositions = [];
+    // let lightColors = [];
+    // let lightPositions = [];
 
-    function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
-        numLights++;
-        lightColors.push(colorR, colorG, colorB);
-        lightPositions.push(posX, posY, posZ)
-    }
+    // function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
+    //     numLights++;
+    //     lightColors.push(colorR, colorG, colorB);
+    //     lightPositions.push(posX, posY, posZ)
+    // }
 
     //        Red   Green Blue   X     Y     Z
     // makeLight(50.0, 50.0, 50.0,  10.0, 0.0,  5.0);
@@ -638,50 +638,50 @@ function runWebGL(queue, geom) {
 
     // let maxColor = 0;
 
-    for(let i = 0; i < 5; i++) {
-        let x = (Math.random() * WIDTH - (WIDTH / 2));
-        let y = (Math.random() * WIDTH - (WIDTH / 2));
-        let r = Math.random() * 25;
-        let g = Math.random() * 50;
-        let b = Math.random() * 75;
-        // maxColor = Math.Math.max(Math.max(r, g), b);
-        makeLight(
-            r, g, b,
-            x, y, 10 * Math.random() + getHeight(x, y) + 3
-        );
-    }
+    // for(let i = 0; i < 5; i++) {
+    //     let x = (Math.random() * WIDTH - (WIDTH / 2));
+    //     let y = (Math.random() * WIDTH - (WIDTH / 2));
+    //     let r = Math.random() * 25;
+    //     let g = Math.random() * 50;
+    //     let b = Math.random() * 75;
+    //     // maxColor = Math.Math.max(Math.max(r, g), b);
+    //     makeLight(
+    //         r, g, b,
+    //         x, y, 10 * Math.random() + getHeight(x, y) + 3
+    //     );
+    // }
 
     // The following commented out loop will draw a cube for each point light
 
-    for(let i = 0; i < numLights; i++) {
-        // Make the max coordinate of the color equal to 1, and scale down the
-        // others accordingly.
-        color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
+    // for(let i = 0; i < numLights; i++) {
+    //     // Make the max coordinate of the color equal to 1, and scale down the
+    //     // others accordingly.
+    //     color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
 
-        let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
-        vec3.scale(color, color, 1.0 / maxColorChannel);
-        // vec3.scale(color, color, 1.0 / maxColor);
+    //     let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
+    //     vec3.scale(color, color, 1.0 / maxColorChannel);
+    //     // vec3.scale(color, color, 1.0 / maxColor);
 
-        // scene.addSceneObject(makeBox(
-        //     color,
-        //     vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
-        //     1,
-        //     lightShader
-        // ));
+    //     // scene.addSceneObject(makeBox(
+    //     //     color,
+    //     //     vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+    //     //     1,
+    //     //     lightShader
+    //     // ));
 
-        let obj = makeMesh(
-            "cube",
-            vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
-            vec3.create(),
-            1,
-            geom,
-            lightShader,
-            color
-        );
-        //console.log(obj);
+    //     let obj = makeMesh(
+    //         "cube",
+    //         vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+    //         vec3.create(),
+    //         1,
+    //         geom,
+    //         lightShader,
+    //         color
+    //     );
+    //     //console.log(obj);
 
-        scene.addSceneObject(obj);     
-    }
+    //     scene.addSceneObject(obj);     
+    // }
 
     // BEGIN CUBE MARCHING
     doCubeMarchingStuff(noTexShader);
@@ -700,21 +700,14 @@ function runWebGL(queue, geom) {
     for(let x = 0; x < numMeshes; x++) {
         chunks.push([]);
         for(let y = 0; y < numMeshes; y++) {
-            // chunks[x].push(makeSurface(
-            //     surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
-            //     surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
-            //     surfaceShader,
-            //     mossTexture));
-               
-            // chunks[x].push(undefined);
-            // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
             chunks[x].push(new Chunk(
                 makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture),
-                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, geom, noTexShader))
-                );
-            // if(chunks[x][y] == undefined) {
-            //     console.log("undefined!");
-            // }
+                makeObjects(
+                    WIDTH,
+                    [(x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH],
+                    geom,
+                    noTexShader))
+            );
         }
     }
 
@@ -831,10 +824,42 @@ function runWebGL(queue, geom) {
                                 surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
                                 surfaceShader,
                                 mossTexture),
-                            makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, geom, noTexShader)
+                            makeObjects(
+                                WIDTH,
+                                [surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH), surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH)],
+                                geom,
+                                noTexShader)
                         );
-                        //console.log(chunks[x][y]);
                     }
+                }
+            }
+        }
+
+        // Set up lights
+        let numLights = 0; // Currently, shader only allows for 8
+
+        let lightColors = [];
+        let lightPositions = [];
+
+        function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
+            numLights++;
+            lightColors.push(colorR, colorG, colorB);
+            lightPositions.push(posX, posY, posZ)
+        }
+
+        for(let x = 0; x < chunks.length; x++) {
+            for(let y = 0; y < chunks[x].length; y++) {
+                for(let i = 0; i < chunks[x][y].objects.length; i++) {
+                    let obj = chunks[x][y].objects[i];
+                    let power = 80 * obj.transform.localScale[0];
+                    makeLight(
+                        power * obj.material.color[0],
+                        power * obj.material.color[1],
+                        power * obj.material.color[2],
+                        obj.transform.position[0],
+                        obj.transform.position[1],
+                        obj.transform.position[2],
+                    );
                 }
             }
         }
@@ -856,6 +881,8 @@ function runWebGL(queue, geom) {
 
             if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
+
+                // console.log(numLights, lightColors, lightPositions);
 
                 gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
@@ -937,9 +964,9 @@ function runWebGL(queue, geom) {
             } else if (shader == noTexShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
-                gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
-                gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
-                gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+                gl.uniform1i(gl.getUniformLocation(program, "numLights"), 0);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), []);
+                gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), []);
 
                 gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
@@ -977,7 +1004,7 @@ function runWebGL(queue, geom) {
             for (let y = 0; y < numMeshes; y++) {
                 drawMesh(chunks[x][y].surface);
 
-                for(let k = 0;k<chunks[x][y].objects.length;k++) {
+                for(let k = 0; k < chunks[x][y].objects.length; k++) {
                     drawMesh(chunks[x][y].objects[k]);
                 }
             }
