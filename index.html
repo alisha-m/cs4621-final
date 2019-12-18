@@ -79,7 +79,7 @@ precision highp float;
 
 #define WATER
 #define SHORE
-// #define LUMINESCENT_SHORE
+#define LUMINESCENT_SHORE
 
 #define MAX_LIGHTS 100
 
@@ -149,7 +149,7 @@ void main() {
     }
 #ifdef SHORE
     else if(distBelowSurface > 0.0 - SAND_HEIGHT) {
-        shoreAlpha = 1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT;
+        shoreAlpha = (1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT);
     }
 #endif
 #endif
@@ -171,7 +171,7 @@ void main() {
 #endif
 }
 </script>
-<script id="floatingIslandVertexShader" type="x-shader/x-vertex">
+<script id="noTexVertexShader" type="x-shader/x-vertex">
     attribute vec3 vert_position;
     attribute vec3 vert_normal;
     attribute vec2 vert_texCoord;
@@ -195,7 +195,7 @@ void main() {
         texCoord = vert_texCoord;
     }
 </script>
-<script id="floatingIslandFragmentShader" type="x-shader/x-fragment">
+<script id="noTexFragmentShader" type="x-shader/x-fragment">
     precision highp float;
     
     #define MAX_LIGHTS 100
@@ -210,7 +210,7 @@ void main() {
     uniform vec3 lightPositions[MAX_LIGHTS];
 
     //uniform sampler2D texture1;
-    uniform vec4 scaleColor;
+    uniform vec3 surfaceColor;
     
     varying vec3 position;
     varying vec3 normal;
@@ -244,7 +244,7 @@ void main() {
             color += (DIFFUSE_COEFF * max(0.0, dot(normal, lightDir))) / (PI * dist * dist) * lightColors[i];
         }
     
-        gl_FragColor = vec4(color, 1.0) * vec4(150.0/255.0, 75.0/255.0, 0.0, 1.0);
+        gl_FragColor = vec4(color, 1.0) * vec4(surfaceColor, 1.0);
         //gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
     }
 </script>
@@ -374,10 +374,10 @@ void main() {
 <script id="objFragmentShader" type="x-shader/x-fragment"> 
     precision highp float;
     
-    uniform vec3 objColor;
+    uniform vec3 color;
     
     void main() {
-        gl_FragColor = vec4(objColor, 1.0);
+        gl_FragColor = vec4(color, 1.0);
     }
 </script>
 

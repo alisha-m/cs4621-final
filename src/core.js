@@ -585,17 +585,17 @@ function runWebGL(queue, geom) {
         "lightFragmentShader"
     );
     
-    let floatingIslandShader = new Shader(
+    let noTexShader = new Shader(
         gl,
-        "floatingIslandVertexShader",
-        "floatingIslandFragmentShader"
+        "noTexVertexShader",
+        "noTexFragmentShader"
     );
 
-    // let objShader = new Shader( 
-    //     gl, 
-    //     "objVertexShader",
-    //     "objFragmentShader"
-    // );
+    let objShader = new Shader( 
+        gl, 
+        "objVertexShader",
+        "objFragmentShader"
+    );
     
     let floorImage = scene.images.floorImage;
     let mossImage = scene.images.mossImage;
@@ -684,7 +684,7 @@ function runWebGL(queue, geom) {
     }
 
     // BEGIN CUBE MARCHING
-    doCubeMarchingStuff(floatingIslandShader);
+    doCubeMarchingStuff(noTexShader);
     // END CUBE MARCHING
 
     let numMeshes = 5;
@@ -694,22 +694,27 @@ function runWebGL(queue, geom) {
 
     let chunks = [];
 
+    // let surfaceCenter = [0, 0];
+    // console.log(surfaceCenter);
+
     for(let x = 0; x < numMeshes; x++) {
         chunks.push([]);
         for(let y = 0; y < numMeshes; y++) {
-// <<<<<<< HEAD
-           chunks[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture));
-// =======
-//             // chunks[x].push(undefined);
-//             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
-//             chunks[x].push(new Chunk(
-//                 makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture),
-//                 makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader))
-//                 );
-//             // if(chunks[x][y] == undefined) {
-//             //     console.log("undefined!");
-//             // }
-// >>>>>>> c737b55cd3f66b2757203a3e67ea7c9283561156
+            // chunks[x].push(makeSurface(
+            //     surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
+            //     surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
+            //     surfaceShader,
+            //     mossTexture));
+               
+            // chunks[x].push(undefined);
+            // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
+            chunks[x].push(new Chunk(
+                makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture),
+                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, geom, noTexShader))
+                );
+            // if(chunks[x][y] == undefined) {
+            //     console.log("undefined!");
+            // }
         }
     }
 
@@ -734,14 +739,12 @@ function runWebGL(queue, geom) {
     );
 
     centerCoord = Math.floor(numMeshes / 2.0);
-    // let surfaceCenter = [chunks[centerCoord][centerCoord].surface.transform.position[0], chunks[centerCoord][centerCoord].surface.transform.position[1]];
-    let surfaceCenter = [chunks[centerCoord][centerCoord].transform.position[0], chunks[centerCoord][centerCoord].transform.position[1]];
+    let surfaceCenter = [chunks[centerCoord][centerCoord].surface.transform.position[0], chunks[centerCoord][centerCoord].surface.transform.position[1]];
+    // surfaceCenter = [chunks[centerCoord][centerCoord].transform.position[0], chunks[centerCoord][centerCoord].transform.position[1]];
+
+    console.log(surfaceCenter);
 
     // STOP ADDING STUFF TO THE SCENE
-
-    // BEGIN CUBE MARCHING
-    doCubeMarchingStuff(floatingIslandShader);
-    // END CUBE MARCHING
 
     // setup time stuff
     let lastTime = jQuery.now();
@@ -822,36 +825,18 @@ function runWebGL(queue, geom) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
                     if(chunks[x][y] === undefined) {
-                        chunks[x][y] = //new Chunk(
+                        chunks[x][y] = new Chunk(
                             makeSurface(
-                            surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
-                            surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
-                            surfaceShader//),
-                            //makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH,geom,objShader)
+                                surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
+                                surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
+                                surfaceShader,
+                                mossTexture),
+                            makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, geom, noTexShader)
                         );
                         //console.log(chunks[x][y]);
                     }
                 }
             }
-        }
-
-        let drawBox = function(box, tex, proj, view, model) {
-            skyBoxProgram.draw(gl, box, function () {
-                if (skyBoxProgram.xform_projMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
-                }
-                if (skyBoxProgram.xform_viewMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
-                }
-                if (skyBoxProgram.xform_modelMat != null) {
-                    gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
-                }
-                if (skyBoxProgram.texture != null) {
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
-                    gl.uniform1i(skyBoxProgram.texture, 0);
-                }
-            });
         }
 
         let drawMesh = function(mesh, shader = undefined) {
@@ -949,7 +934,7 @@ function runWebGL(queue, geom) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
-            } else if (shader == floatingIslandShader) {
+            } else if (shader == noTexShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
                 gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
@@ -960,13 +945,11 @@ function runWebGL(queue, geom) {
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
 
-                gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
-
+                gl.uniform3fv(gl.getUniformLocation(program, "surfaceColor"), mesh.material.color);
+            } else if(shader == objShader) {
+                updateMVP(gl, program, mesh.transform, scene.camera);
+                gl.uniform3fv(gl.getUniformLocation(program, "color"), mesh.material.color);
             }
-            // } else if(shader == objShader) {
-
-            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
-            // }
 
             draw(gl, program, shape, () => {});
         }
@@ -992,15 +975,11 @@ function runWebGL(queue, geom) {
 
         for (let x = 0; x < numMeshes; x++) {
             for (let y = 0; y < numMeshes; y++) {
-// <<<<<<< HEAD
-                drawMesh(chunks[x][y]);
-// =======
-//                 //console.log("chunk: " + chunks[x][y]);
-//                 drawMesh(chunks[x][y].surface, surfaceShader);
-//                 for(let k = 0;k<chunks[x][y].objects.length;k++) {
-//                     drawMesh(chunks[x][y].objects[k],surfaceShader);
-//                 }
-// >>>>>>> c737b55cd3f66b2757203a3e67ea7c9283561156
+                drawMesh(chunks[x][y].surface);
+
+                for(let k = 0;k<chunks[x][y].objects.length;k++) {
+                    drawMesh(chunks[x][y].objects[k]);
+                }
             }
         }
         for (let i = 0; i < scene.meshObjects.length; i++) {
