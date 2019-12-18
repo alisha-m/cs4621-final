@@ -809,24 +809,10 @@ function runWebGL(queue) {
             } else if (shader == waterShader) {
 
                 function updateWaterMVP(gl, program, transform, camera) {
-                    let modelMatrix = getModel(transform);
+                    let transformNew = new Transform(transform.position, transform.rotation, transform.localScale);
 
-                    let lookPoint = vec3.create();
-
-                    let pos = camera.transform.position; //vec3.fromValues(0.0, 0.0, camera.transform.position[2]);
-                    let dir = /* vec3.fromValues(1.0, 0.0, 0.0); */ camera.getCamDir();
-
-                    vec3.add(lookPoint, pos, dir);
-
-                    let viewMatrix = mat4.create();
-                    mat4.lookAt(viewMatrix, pos, lookPoint, camera.camUp);
-
-                    let rotateMatrix = mat4.create();
-
-                    // mat4.fromRotation(rotateMatrix, Math.PI, vec3.fromValues(0.0, 0.0, 1.0));
-
-                    // mat4.mul(viewMatrix, rotateMat, viewMatrix);
-
+                    let modelMatrix = getModel(transformNew);
+                    let viewMatrix = getView(camera);
                     let projectionMatrix = getProjection(camera);
                     let normalMatrix = getNormalMatrix(modelMatrix, mat4.create());
                 
@@ -835,16 +821,10 @@ function runWebGL(queue) {
                     let projectionLocation = gl.getUniformLocation(program, "projection");
                     let normalMatLocation = gl.getUniformLocation(program, "normalMat");
 
-                    let rotateMatLocation = gl.getUniformLocation(program, "rotateMat");
-
-                    // console.log(viewMatrix);
-
                     gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
                     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
                     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
                     gl.uniformMatrix3fv(normalMatLocation, false, normalMatrix);
-
-                    gl.uniformMatrix3fv(rotateMatLocation, false, rotateMatrix);
                 }
 
                 updateWaterMVP(gl, program, mesh.transform, scene.camera);
