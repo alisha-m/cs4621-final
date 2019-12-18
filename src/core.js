@@ -699,15 +699,17 @@ function runWebGL(queue) {
     // If numMeshes = 5, this makes it go from -2 to 2 instead of 0 to 4
     let firstMeshOffset = ((numMeshes - 1) / 2);
 
-    let surfaces = [];
+    let chunks = [];
 
     for(let x = 0; x < numMeshes; x++) {
-        surfaces.push([]);
+        chunks.push([]);
         for(let y = 0; y < numMeshes; y++) {
-            // surfaces[x].push(undefined);
+            // chunks[x].push(undefined);
             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
-            surfaces[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture));
-            // if(surfaces[x][y] == undefined) {
+            chunks[x].push(new Chunk(
+                makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture)),
+                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH));
+            // if(chunks[x][y] == undefined) {
             //     console.log("undefined!");
             // }
         }
@@ -734,7 +736,7 @@ function runWebGL(queue) {
     );
 
     centerCoord = Math.floor(numMeshes / 2.0);
-    let surfaceCenter = [surfaces[centerCoord][centerCoord].transform.position[0], surfaces[centerCoord][centerCoord].transform.position[1]];
+    let surfaceCenter = [chunks[centerCoord][centerCoord].surface.transform.position[0], chunks[centerCoord][centerCoord].surface.transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
 
@@ -777,18 +779,18 @@ function runWebGL(queue) {
         if(newCenter[0] < surfaceCenter[0]) {
             for(let x = numMeshes - 1; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
                 for(let y = 0; y < numMeshes; y++) {
-                    // Have to manually assign undefined, because surfaces[x - 1]
+                    // Have to manually assign undefined, because chunks[x - 1]
                     // is undefined and therefore has no property [y]
-                    surfaces[x][y] = (x - 1 < 0 ? undefined : surfaces[x - 1][y]);
+                    chunks[x][y] = (x - 1 < 0 ? undefined : chunks[x - 1][y]);
                 }
             }
             updateSurfaces = true;
         } else if(newCenter[0] > surfaceCenter[0]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    // Have to manually assign undefined, because surfaces[x + 1]
+                    // Have to manually assign undefined, because chunks[x + 1]
                     // is undefined and therefore has no property [y]
-                    surfaces[x][y] = (x + 1 >= numMeshes ? undefined : surfaces[x + 1][y]);
+                    chunks[x][y] = (x + 1 >= numMeshes ? undefined : chunks[x + 1][y]);
                 }
             }
             updateSurfaces = true;
@@ -797,31 +799,32 @@ function runWebGL(queue) {
         if(newCenter[1] < surfaceCenter[1]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = numMeshes - 1; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
-                    surfaces[x][y] = (y - 1 < 0 ? undefined : surfaces[x][y - 1]);
+                    chunks[x][y] = (y - 1 < 0 ? undefined : chunks[x][y - 1]);
                 }
             }
             updateSurfaces = true;
         } else if(newCenter[1] > surfaceCenter[1]) {
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    surfaces[x][y] = (y + 1 >= numMeshes ? undefined : surfaces[x][y + 1]);
+                    chunks[x][y] = (y + 1 >= numMeshes ? undefined : chunks[x][y + 1]);
                 }
             }
             updateSurfaces = true;
         }
 
-        // Make new surfaces for each space that is undefined
+        // Make new chunks for each space that is undefined
         if(updateSurfaces) {
             surfaceCenter = newCenter;
 
             // console.log(scene.camera.transform.position);
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
-                    if(surfaces[x][y] === undefined) {
-                        surfaces[x][y] = makeSurface(
+                    if(chunks[x][y] === undefined) {
+                        chunks[x][y] = new Chunk(
+                            makeSurface(
                             surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
                             surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
-                            surfaceShader
+                            surfaceShader)
                         );
                     }
                 }
@@ -1011,7 +1014,7 @@ function runWebGL(queue) {
         // if (gl.getUniformLocation(program, "texture1") != null) {
         for (let x = 0; x < numMeshes; x++) {
             for (let y = 0; y < numMeshes; y++) {
-                drawMesh(surfaces[x][y]);
+                drawMesh(chunks[x][y].surface);
             }
         }
         for (let i = 0; i < scene.meshObjects.length; i++) {
