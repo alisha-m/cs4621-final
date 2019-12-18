@@ -24,30 +24,30 @@ function isPowerOfTwo(val){
 }
 
 function loadTexture(gl, image, activeTexture) {
-        // Create the texture.
-        // Step 1: Create the texture object and bind it to the given active texture
-        gl.activeTexture(activeTexture);
+    // Create the texture.
+    // Step 1: Create the texture object and bind it to the given active texture
+    gl.activeTexture(activeTexture);
 
-        let texture = gl.createTexture();
-        // Step 2: Bind the texture object to the "target" TEXTURE_2D
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        // Step 3: (Optional) Tell WebGL that pixels are flipped vertically,
-        //         so that we don't have to deal with flipping the y-coordinate.
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        // Step 4: Download the image data to the GPU.
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        // Step 5: Creating a mipmap so that the texture can be anti-aliased.
-        if(isPowerOfTwo(image.width) && isPowerOfTwo(image.height)) {
-            gl.generateMipmap(gl.TEXTURE_2D);
-        }
-        else {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        }
-        gl.bindTexture(gl.TEXTURE_2D, null);
+    let texture = gl.createTexture();
+    // Step 2: Bind the texture object to the "target" TEXTURE_2D
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // Step 3: (Optional) Tell WebGL that pixels are flipped vertically,
+    //         so that we don't have to deal with flipping the y-coordinate.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    // Step 4: Download the image data to the GPU.
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    // Step 5: Creating a mipmap so that the texture can be anti-aliased.
+    if(isPowerOfTwo(image.width) && isPowerOfTwo(image.height)) {
+        gl.generateMipmap(gl.TEXTURE_2D);
+    }
+    else {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    }
+    gl.bindTexture(gl.TEXTURE_2D, null);
 
-        return texture;
+    return texture;
 }
 
 // Sky box - Used this page: https://learnopengl.com/Advanced-OpenGL/Cubemaps
@@ -340,7 +340,7 @@ function getNormalMatrix(model, view) {
     let normalMat = mat3.create();
     let modelView = mat4.create();
     mat4.mul(modelView, view, model);
-    mat3.normalFromMat4(normalMat, model);
+    mat3.normalFromMat4(normalMat, modelView);
     return normalMat;
 }
 
@@ -482,13 +482,13 @@ function runWebGL(queue) {
         "surfaceFragmentShader"
     );
 
-    // let waterShader = new Shader(
-    //     gl,
-    //     "waterVertexShader",
-    //     "waterFragmentShader",
-    //     true, true, true,
-    //     "vert_height"
-    // );
+    let waterShader = new Shader(
+        gl,
+        "waterVertexShader",
+        "waterFragmentShader",
+        true, true, true,
+        "vert_height"
+    );
 
     let skyboxShader = new Shader(
         gl,
@@ -554,9 +554,13 @@ function runWebGL(queue) {
 
     // ADD STUFF TO SCENE
 
-    let ambientLight = vec3.fromValues(0.05, 0.1, 0.2);
-    let dirLightDirection = vec3.fromValues(1.0, 1.0, 1.0);
-    let dirLightColor = vec3.fromValues(0.2, 0.25, 0.3);
+    // let ambientLight = vec3.fromValues(0.05, 0.1, 0.2);
+    // let dirLightDirection = vec3.fromValues(1.0, 1.0, 1.0);
+    // let dirLightColor = vec3.fromValues(0.2, 0.25, 0.3);
+
+    let ambientLight = vec3.fromValues(0.3, 0.2, 0.05);
+    let dirLightDirection = vec3.fromValues(0.5, 1.0, 0.5);
+    let dirLightColor = vec3.fromValues(0.45, 0.5, 0.6);
 
     // Set up lights
     let numLights = 0; // Currently, shader only allows for 8
@@ -580,9 +584,9 @@ function runWebGL(queue) {
     for(let i = 0; i < 5; i++) {
         let x = (Math.random() * WIDTH - (WIDTH / 2));
         let y = (Math.random() * WIDTH - (WIDTH / 2));
-        let r = Math.random() * 50;
-        let g = Math.random() * 100;
-        let b = Math.random() * 150;
+        let r = Math.random() * 25;
+        let g = Math.random() * 50;
+        let b = Math.random() * 75;
         // maxColor = Math.Math.max(Math.max(r, g), b);
         makeLight(
             r, g, b,
@@ -613,16 +617,26 @@ function runWebGL(queue) {
     // surface.material.texture = floorTexture;
     // scene.addSceneObject(surface);
 
+    let numMeshes = 5;
+
+    // If numMeshes = 5, this makes it go from -2 to 2 instead of 0 to 4
+    let firstMeshOffset = ((numMeshes - 1) / 2);
+
     let surfaces = [];
     
-    for(let x = 0; x < 3; x++) {
+    for(let x = 0; x < numMeshes; x++) {
         surfaces.push([]);
-        for(let y = 0; y < 3; y++) {
-            surfaces[x].push(makeSurface((x - 1) * WIDTH, (y - 1) * WIDTH, surfaceShader));
-
-            // scene.meshObjects.push(makeWater((x - 1) * WIDTH, (y - 1) * WIDTH, waterShader));
+        for(let y = 0; y < numMeshes; y++) {
+            // surfaces[x].push(undefined);
+            // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
+            surfaces[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader));
+            // if(surfaces[x][y] == undefined) {
+            //     console.log("undefined!");
+            // }
         }
     }
+
+    scene.meshObjects.push(makeWater(0, 0, waterShader));
 
     let textures = [];
     textures.push(queue.getResult("skyPosX", false));
@@ -641,16 +655,15 @@ function runWebGL(queue) {
         skyboxShader,
         vec3.fromValues(-Math.PI / 2.0, 0.0, 0.0)
     );
-
-    // console.log(scene.camera.transform.position);
-
-    let surfaceCenter = [surfaces[1][1].transform.position[0], surfaces[1][1].transform.position[1]];
+    
+    centerCoord = Math.floor(numMeshes / 2.0);
+    let surfaceCenter = [surfaces[centerCoord][centerCoord].transform.position[0], surfaces[centerCoord][centerCoord].transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
 
     // setup time stuff
     let lastTime = jQuery.now();
-    let deltaTime = 0
+    let deltaTime = 0;
 
     function updateWebGl() {
         // Update time
@@ -685,54 +698,52 @@ function runWebGL(queue) {
         // Spaces that must be created will be out of bounds, which will result in them
         // being undefined. They will have to be recalculated
         if(newCenter[0] < surfaceCenter[0]) {
-            for(let x = 2; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
-                for(let y = 0; y < 3; y++) {
+            for(let x = numMeshes - 1; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
+                for(let y = 0; y < numMeshes; y++) {
                     // Have to manually assign undefined, because surfaces[x - 1]
                     // is undefined and therefore has no property [y]
                     surfaces[x][y] = (x - 1 < 0 ? undefined : surfaces[x - 1][y]);
                 }
             }
-            surfaceCenter = newCenter;
             updateSurfaces = true;
         } else if(newCenter[0] > surfaceCenter[0]) {
-            for(let x = 0; x < 3; x++) {
-                for(let y = 0; y < 3; y++) {
+            for(let x = 0; x < numMeshes; x++) {
+                for(let y = 0; y < numMeshes; y++) {
                     // Have to manually assign undefined, because surfaces[x + 1]
                     // is undefined and therefore has no property [y]
-                    surfaces[x][y] = (x + 1 >= 3 ? undefined : surfaces[x + 1][y]);
+                    surfaces[x][y] = (x + 1 >= numMeshes ? undefined : surfaces[x + 1][y]);
                 }
             }
-            surfaceCenter = newCenter;
             updateSurfaces = true;
         }
         
         if(newCenter[1] < surfaceCenter[1]) {
-            for(let x = 0; x < 3; x++) {
-                for(let y = 2; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
+            for(let x = 0; x < numMeshes; x++) {
+                for(let y = numMeshes - 1; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
                     surfaces[x][y] = (y - 1 < 0 ? undefined : surfaces[x][y - 1]);
                 }
             }
-            surfaceCenter = newCenter;
             updateSurfaces = true;
         } else if(newCenter[1] > surfaceCenter[1]) {
-            for(let x = 0; x < 3; x++) {
-                for(let y = 0; y < 3; y++) {
-                    surfaces[x][y] = (y + 1 >= 3 ? undefined : surfaces[x][y + 1]);
+            for(let x = 0; x < numMeshes; x++) {
+                for(let y = 0; y < numMeshes; y++) {
+                    surfaces[x][y] = (y + 1 >= numMeshes ? undefined : surfaces[x][y + 1]);
                 }
             }
-            surfaceCenter = newCenter;
             updateSurfaces = true;
         }
 
         // Make new surfaces for each space that is undefined
         if(updateSurfaces) {
+            surfaceCenter = newCenter;
+
             // console.log(scene.camera.transform.position);
-            for(let x = 0; x < 3; x++) {
-                for(let y = 0; y < 3; y++) {
+            for(let x = 0; x < numMeshes; x++) {
+                for(let y = 0; y < numMeshes; y++) {
                     if(surfaces[x][y] === undefined) {
                         surfaces[x][y] = makeSurface(
-                            surfaceCenter[0] + ((x - 1) * WIDTH),
-                            surfaceCenter[1] + ((y - 1) * WIDTH),
+                            surfaceCenter[0] + ((x - firstMeshOffset) * WIDTH),
+                            surfaceCenter[1] + ((y - firstMeshOffset) * WIDTH),
                             surfaceShader
                         );
                     }
@@ -791,20 +802,58 @@ function runWebGL(queue) {
                 // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
                 // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
 
-            // } else if (shader == waterShader) {
-            //     updateMVP(gl, program, mesh.transform, scene.camera);
+            } else if (shader == waterShader) {
 
-            //     gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
-            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
-            //     gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+                function updateWaterMVP(gl, program, transform, camera) {
+                    let modelMatrix = getModel(transform);
 
-            //     gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
-            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
-            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
+                    let lookPoint = vec3.create();
 
-            //     // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
-            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
-            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
+                    let pos = camera.transform.position; //vec3.fromValues(0.0, 0.0, camera.transform.position[2]);
+                    let dir = /* vec3.fromValues(1.0, 0.0, 0.0); */ camera.getCamDir();
+
+                    vec3.add(lookPoint, pos, dir);
+
+                    let viewMatrix = mat4.create();
+                    mat4.lookAt(viewMatrix, pos, lookPoint, camera.camUp);
+
+                    let rotateMatrix = mat4.create();
+
+                    // mat4.fromRotation(rotateMatrix, Math.PI, vec3.fromValues(0.0, 0.0, 1.0));
+
+                    // mat4.mul(viewMatrix, rotateMat, viewMatrix);
+
+                    let projectionMatrix = getProjection(camera);
+                    let normalMatrix = getNormalMatrix(modelMatrix, mat4.create());
+                
+                    let modelLocation = gl.getUniformLocation(program, "model");
+                    let viewLocation = gl.getUniformLocation(program, "view");
+                    let projectionLocation = gl.getUniformLocation(program, "projection");
+                    let normalMatLocation = gl.getUniformLocation(program, "normalMat");
+
+                    let rotateMatLocation = gl.getUniformLocation(program, "rotateMat");
+
+                    // console.log(viewMatrix);
+
+                    gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
+                    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+                    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+                    gl.uniformMatrix3fv(normalMatLocation, false, normalMatrix);
+
+                    gl.uniformMatrix3fv(rotateMatLocation, false, rotateMatrix);
+                }
+
+                updateWaterMVP(gl, program, mesh.transform, scene.camera);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+                gl.uniform1i(gl.getUniformLocation(program, "skyBox"), 0);
+
+                gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
+
+                // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
 
             } else if(shader == skyboxShader) {
                 function updateSkyboxMVP(gl, program, transform, camera) {
@@ -883,8 +932,8 @@ function runWebGL(queue) {
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         
         // if (gl.getUniformLocation(program, "texture1") != null) {
-        for (let x = 0; x < 3; x++) {
-            for (let y = 0; y < 3; y++) {
+        for (let x = 0; x < numMeshes; x++) {
+            for (let y = 0; y < numMeshes; y++) {
                 drawMesh(surfaces[x][y]);
             }
         }
