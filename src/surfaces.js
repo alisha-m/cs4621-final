@@ -46,7 +46,7 @@ function getNormal(vert1, vert2, vert3) {
  *                      coordinate, given an x and y coordinate. If not entered,
  *                      then no additional coordinate will be present
  */
-function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surfaceShader, otherFunc = undefined) {
+function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surfaceShader, texture, otherFunc = undefined) {
     let space = width / numDivisions;
 
     // To account for the fact that n squares requires n + 1 points. Note that 
@@ -81,7 +81,7 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
                 }
     
                 // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
-                geom.uvs.push(vec2.fromValues(x % 2, y % 2));
+                geom.uvs.push(vec2.fromValues(x % 4 / 4, y % 4 / 4));
 
                 facetedNormals[x].push([]);
             }
@@ -133,6 +133,7 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
 
     // Create material
     let material = new Material(surfaceShader);
+    material.setTexture(texture,1);
 
     // Create transform:
     let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
@@ -143,13 +144,14 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
     return mesh;
 }
 
-function makeSurface(x, y, shader) {
+function makeSurface(x, y, shader,texture) {
     return makeSurfaceAdvanced(
         WIDTH,
         NUM_DIVISIONS,
         vec3.fromValues(x, y, -0.5),
         getHeight,
-        shader
+        shader,
+        texture
     );
 }
 
