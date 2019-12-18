@@ -140,11 +140,12 @@ void main() {
         waterAlpha = min(DEPTH_MURKINESS * distBelowSurface + BASE_MURKINESS, 1.0);
     }
 
-    gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
+    //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
+    gl_FragColor = (1.0 - waterAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
 #else
-    gl_FragColor = vec4(color, 1.0);
+    //gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
 #endif
-    // gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
 }
 </script>
 

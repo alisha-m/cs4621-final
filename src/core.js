@@ -448,6 +448,8 @@ function startWebGL() {
     queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
     queue.loadFile({ id: "wall", src: "data/wall.jpg", type: "image" });
 
+    queue.loadFile({ id: "moss", src: "data/moss.jpg", type: "image" });
+
     let path = "data/field-skyboxes/Meadow/";
 
     queue.loadFile({ id: "skyPosX", src: (path + "posx.jpg"), type: "image" });
@@ -460,6 +462,7 @@ function startWebGL() {
     queue.on("complete", function () {
         scene.images.floorImage = queue.getResult("floor");
         scene.images.wallImage = queue.getResult("wall");
+        scene.images.mossImage = queue.getResult("moss");
         runWebGL(queue);
     }, this);
 }
@@ -539,9 +542,10 @@ function runWebGL(queue) {
     // };
     
     let floorImage = scene.images.floorImage;
-    let wallImage = scene.images.wallImage;
+    let mossImage = scene.images.mossImage;
     let floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
-    let wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
+
+    let mossTexture = loadTexture(gl, mossImage, gl.TEXTURE1);
 
     // make camera and add it to the scene
     let fov = Math.PI / 4;
@@ -629,7 +633,7 @@ function runWebGL(queue) {
         for(let y = 0; y < numMeshes; y++) {
             // surfaces[x].push(undefined);
             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
-            surfaces[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader));
+            surfaces[x].push(makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture));
             // if(surfaces[x][y] == undefined) {
             //     console.log("undefined!");
             // }
