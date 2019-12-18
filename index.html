@@ -100,7 +100,9 @@ uniform vec3 dirLightColor;
 uniform vec3 camPos;
 
 const vec3 WATER_COLOR = vec3(0.25, 0.45, 0.7);
+const vec3 SAND_COLOR = vec3(0.4,1.0,1.0);
 
+const float SAND_HEIGHT = 0.5;
 const float WATER_HEIGHT = 0.0;
 const float DEPTH_MURKINESS = 0.5;
 const float BASE_MURKINESS = 0.5;
@@ -126,17 +128,19 @@ void main() {
 
 #ifdef WATER
     float waterAlpha = 0.0;
+    float shoreAlpha = 0.0;
     float distBelowSurface = WATER_HEIGHT - height;
     if(distBelowSurface > 0.0) {
-        // vec3 toCamVector = normalize(camPos - position);
-        // float throughWaterDistance = length(distBelowSurface * toCamVector);
         waterAlpha = min(DEPTH_MURKINESS * distBelowSurface + BASE_MURKINESS, 1.0);
+    }
+    else if(distBelowSurface > 0.0 - SAND_HEIGHT) {
+        shoreAlpha = 1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT;
     }
 #endif
 
 #ifdef WATER
     //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
-    gl_FragColor = (1.0 - waterAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
+    gl_FragColor = (1.0 - waterAlpha) * (1.0 - shoreAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0) + shoreAlpha * vec4(SAND_COLOR,1.0);
 #endif
 #ifndef WATER
     //gl_FragColor = vec4(color, 1.0);
