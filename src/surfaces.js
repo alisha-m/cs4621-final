@@ -101,11 +101,6 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
                 facetedNormals[x][y].push(normal2); // Top right
                 facetedNormals[x - 1][y].push(normal2); // Top left
 
-                // console.log(bottomLeft, bottomRight, topRight);
-                // console.log(geom.vertices[bottomLeft], geom.vertices[bottomRight], geom.vertices[topRight]);
-                // console.log(bottomLeft, topRight, topLeft);
-                // console.log(geom.vertices[bottomLeft], geom.vertices[topRight], geom.vertices[topLeft]);
-
                 geom.faces.push(new Face(bottomLeft, bottomRight, topRight));
                 geom.faces.push(new Face(bottomLeft, topRight, topLeft));
             }

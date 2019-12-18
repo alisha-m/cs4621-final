@@ -387,7 +387,6 @@ function updateLights(gl, program, numLights, lightColors, lightPositions) {
     let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
 
     let ambientLightLocation = gl.getUniformLocation(program, "ambientLight");
-    console.log(ambientLightLocation);
 
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
@@ -750,7 +749,6 @@ function runWebGL(queue) {
         if(updateSurfaces) {
             surfaceCenter = newCenter;
 
-            // console.log(scene.camera.transform.position);
             for(let x = 0; x < numMeshes; x++) {
                 for(let y = 0; y < numMeshes; y++) {
                     if(surfaces[x][y] === undefined) {
