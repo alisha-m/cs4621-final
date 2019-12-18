@@ -32,7 +32,6 @@ function makeGeom(string) {
         else if (line[0] == 'vn') normals.push(vec3.fromValues(val1, val2, val3)); 
         else if (line[0] == 'vt') uvs.push(vec2.fromValues(val1, val2));
         else if (line[0] == 'f') {
-            
             var f1 = line[1].split('/');
             var f2 = line[2].split('/');
             var f3 = line[3].split('/');

@@ -545,7 +545,7 @@ function startWebGL() {
         });
 */
         $.ajax({
-            url: "src/Objects/cube.obj",
+            url: "data/objects/mushroom.obj",
             dataType: 'text'
         }).done(function(data) {
             var res = makeGeom(data);
@@ -750,7 +750,8 @@ function runWebGL(queue, geom) {
             // console.log("Initial: ", (x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH);
             chunks[x].push(new Chunk(
                 makeSurface((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH, surfaceShader, mossTexture)),
-                makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH));
+                // makeObjects((x - firstMeshOffset) * WIDTH, (y - firstMeshOffset) * WIDTH)
+                );
             // if(chunks[x][y] == undefined) {
             //     console.log("undefined!");
             // }
