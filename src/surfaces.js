@@ -1,3 +1,6 @@
+const WIDTH = 40;
+const NUM_DIVISIONS = 64;
+
 function getHeight(x, y) {
     let inputFactor = 0.05;
     let outputFactor = 2.0;
@@ -31,15 +34,24 @@ function getNormal(vert1, vert2, vert3) {
 /**
  * Creates a square hilly terrain surface mesh object
  * 
- * @param width The sidelength of the square
- * @param numDivisions The number of points per side of the mesh. This cannot be
- *                     greater than 256 (because indices are stored as unsigned
- *                     shorts)
- * @param center The location of the center of the mesh
+ * @param width         The sidelength of the square
+ * @param numDivisions  The number of points per side of the mesh. This cannot be
+ *                      greater than 256 (because indices are stored as unsigned
+ *                      shorts)
+ * @param center        The location of the center of the mesh
+ * @param getHeightFunc A function that returns a height. It should take in 2 
+ *                      2 parameters, an x and y coordinate.
  * @param surfaceShader The shader to be used for rendering the surface
+ * @param otherFunc     An optional function that returns an additional
+ *                      coordinate, given an x and y coordinate. If not entered,
+ *                      then no additional coordinate will be present
  */
-function makeSurface(width, numDivisions, center, surfaceShader) {
+function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surfaceShader, texture, otherFunc = undefined) {
     let space = width / numDivisions;
+
+    // To account for the fact that n squares requires n + 1 points. Note that 
+    // the first row of points does not create any squares
+    numDivisions += 1;
 
     let geom = new Geometry();
 
@@ -48,21 +60,33 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
     // the smooth normal for that point
     let facetedNormals = [];
 
-    for(let x = 0; x < numDivisions; x++) {
+    for(let x = -1; x <= numDivisions; x++) {
         facetedNormals.push([]);
-        for(let y = 0; y < numDivisions; y++) {
+        for(let y = -1; y <= numDivisions; y++) {
 
             let xCoord = -(width / 2) + (x * space);
             let yCoord = -(width / 2) + (y * space);
 
             // console.log(xCoord, yCoord);
 
-            geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(xCoord, yCoord)));
-            // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
-            geom.uvs.push(vec2.fromValues(x % 2, y % 2));
-            facetedNormals[x].push([]);
-            
-            if(x != 0 && y != 0) {
+            if(x >= 0 && x < numDivisions && y >= 0 && y < numDivisions) {
+                geom.vertices.push(vec3.fromValues(
+                    xCoord,
+                    yCoord,
+                    getHeightFunc(center[0] + xCoord, center[1] + yCoord)
+                ));
+
+                if(otherFunc != undefined) {
+                    geom.otherCoords.push(otherFunc(center[0] + xCoord, center[1] + yCoord));
+                }
+    
+                // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
+                geom.uvs.push(vec2.fromValues(x % 4 / 4, y % 4 / 4));
+
+                facetedNormals[x].push([]);
+            }
+
+            if(x > 0 && y > 0 && x < numDivisions && y < numDivisions) {
                 let bottomLeft = (x - 1) * numDivisions + (y - 1);
                 let bottomRight = x * numDivisions + (y - 1);
                 let topRight = x * numDivisions + y;
@@ -109,6 +133,7 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
 
     // Create material
     let material = new Material(surfaceShader);
+    material.setTexture(texture,1);
 
     // Create transform:
     let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
@@ -119,7 +144,29 @@ function makeSurface(width, numDivisions, center, surfaceShader) {
     return mesh;
 }
 
-function getLightBox(lightShader, color, position) {
+function makeSurface(x, y, shader,texture) {
+    return makeSurfaceAdvanced(
+        WIDTH,
+        NUM_DIVISIONS,
+        vec3.fromValues(x, y, -0.5),
+        getHeight,
+        shader,
+        texture
+    );
+}
+
+function makeWater(x, y, shader) {
+    return makeSurfaceAdvanced(
+        WIDTH,
+        NUM_DIVISIONS,
+        vec3.fromValues(x, y, -0.5),
+        function(x, y) { return 0.0; },
+        shader,
+        getHeight
+    );
+}
+
+function makeBox(color, position, size, shader, rotation = vec3.create()) {
     // Create cube vertices
 
     let geom = new Geometry();
@@ -159,27 +206,27 @@ function getLightBox(lightShader, color, position) {
     geom.faces.push(new Face(4, 7, 6));
 
     // Create material
-    let material = new Material(lightShader);
+    let material = new Material(shader);
     material.setColor(color);
 
     // Create transform:
-    let transform = new Transform(position, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
+    let transform = new Transform(position, rotation, vec3.fromValues(size, size, size));
 
     // Create mesh object
-    let mesh = new MeshObject("Quad", transform, geom, material);
+    let mesh = new MeshObject("Box", transform, geom, material);
 
     return mesh;
 }
 
-function getQuadMesh(center, rotation, width, height) {
+function getQuadMesh(center, rotation, width, height, shader) {
     // Create geometry
     let halfWidth = width/2;
     let halfHeight = height/2;
 
-    let topLeft = vec3.fromValues(-0.5, 0.5, 0);
-    let topRight = vec3.fromValues(0.5, 0.5, 0);
-    let bottomLeft = vec3.fromValues(-0.5, -0.5, 0);
-    let bottomRight = vec3.fromValues(0.5, -0.5, 0);
+    let topLeft = vec3.fromValues(-1.0, 1.0, 0);
+    let topRight = vec3.fromValues(1.0, 1.0, 0);
+    let bottomLeft = vec3.fromValues(-1.0, -1.0, 0);
+    let bottomRight = vec3.fromValues(1.0, -1.0, 0);
 
     let origin = vec3.fromValues(0, 0, 0);
 
@@ -207,7 +254,7 @@ function getQuadMesh(center, rotation, width, height) {
     quadGeom.faces.push(topFace);
 
     // Create material
-    let quadMat = new Material("vertexShader", "fragmentShader");
+    let quadMat = new Material(shader);
 
     // Create transform:
     let quadTransform = new Transform(center, rotation, vec3.fromValues(width, height, 1));

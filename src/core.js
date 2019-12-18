@@ -1,7 +1,9 @@
-var canvas = document.getElementById("webglCanvas");
+let canvas = document.getElementById("webglCanvas");
+
+let sqr = function(x) { return x * x; }
 
 function initializeWebGL(canvas) {
-    var gl = null;
+    let gl = null;
     try {
         gl = canvas[0].getContext("experimental-webgl");
         if (!gl) {
@@ -26,7 +28,7 @@ function loadTexture(gl, image, activeTexture) {
         // Step 1: Create the texture object and bind it to the given active texture
         gl.activeTexture(activeTexture);
 
-        var texture = gl.createTexture();
+        let texture = gl.createTexture();
         // Step 2: Bind the texture object to the "target" TEXTURE_2D
         gl.bindTexture(gl.TEXTURE_2D, texture);
         // Step 3: (Optional) Tell WebGL that pixels are flipped vertically,
@@ -51,12 +53,12 @@ function loadTexture(gl, image, activeTexture) {
 // Sky box - Used this page: https://learnopengl.com/Advanced-OpenGL/Cubemaps
 // Images should be in order: posX, negX, posY, negY, posZ, negZ
 function createCubeMapTexture(gl, images) {
-    var texture = gl.createTexture();
+    let texture = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-    var texTargets = [
+    let texTargets = [
         gl.TEXTURE_CUBE_MAP_POSITIVE_X,
         gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
         gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
@@ -65,7 +67,7 @@ function createCubeMapTexture(gl, images) {
         gl.TEXTURE_CUBE_MAP_NEGATIVE_Z
     ];
 
-    for(var i = 0; i < 6; i++) {
+    for(let i = 0; i < 6; i++) {
         gl.texImage2D(texTargets[i], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
     }
 
@@ -77,10 +79,10 @@ function createCubeMapTexture(gl, images) {
 }
 
 function createBox(gl, sizeX, sizeY) {
-    var shape = {};
-    var scale = Math.max(sizeX, sizeY)*0.5;
+    let shape = {};
+    let scale = Math.max(sizeX, sizeY)*0.5;
 
-    var positions = [
+    let positions = [
         -0.5*scale, -0.5*scale, -0.5*scale,
          0.5*scale, -0.5*scale, -0.5*scale,
         -0.5*scale,  0.5*scale, -0.5*scale,
@@ -92,7 +94,7 @@ function createBox(gl, sizeX, sizeY) {
          0.5*scale,  0.5*scale,  0.5*scale
     ];
 
-    var indices = [
+    let indices = [
         // Front
         2, 3, 7,
         2, 7, 6,
@@ -118,19 +120,19 @@ function createBox(gl, sizeX, sizeY) {
         0, 3, 2
     ];
 
-    var vertexData = [];
-    var vertexCount = positions.length / 3;
-    for (var i = 0; i < vertexCount; i++) {
+    let vertexData = [];
+    let vertexCount = positions.length / 3;
+    for (let i = 0; i < vertexCount; i++) {
         vertexData.push(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
     }
-    var vertexArray = new Float32Array(vertexData);
-    var vertexBuffer = gl.createBuffer();
+    let vertexArray = new Float32Array(vertexData);
+    let vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    var indexArray = new Uint16Array(indices);
-    var indexBuffer = gl.createBuffer();
+    let indexArray = new Uint16Array(indices);
+    let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -151,6 +153,9 @@ function createShape(gl, geometry) {
 
     let hasNormals = geometry.normals.length > 0;
     let hasUVs = geometry.uvs.length > 0;
+    let hasOtherCoords = geometry.otherCoords.length > 0;
+
+    geometry.numOtherCoords = 1;
 
     for (let i = 0; i < vertexCount; i++) {
         vertexData.push(geometry.vertices[i][0], geometry.vertices[i][1], geometry.vertices[i][2]);
@@ -161,6 +166,10 @@ function createShape(gl, geometry) {
 
         if(hasUVs) {
             vertexData.push(geometry.uvs[i][0], geometry.uvs[i][1]);
+        }
+
+        if(hasOtherCoords) {
+            vertexData.push(geometry.otherCoords[i]); 
         }
     }
 
@@ -181,39 +190,42 @@ function createShape(gl, geometry) {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
+    shape.hasNormals = hasNormals;
+    shape.hasUVs = hasUVs;
+    shape.hasOtherCoords = hasOtherCoords;
+    if(hasOtherCoords) shape.numOtherCoords = 1; // geometry.numOtherCoords;
+
     shape.vertexBuffer = vertexBuffer;
     shape.indexBuffer = indexBuffer;
     shape.size = indexArray.length;
-    shape.stride = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0))
+    shape.stride = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0) + (hasOtherCoords ? shape.numOtherCoords : 0))
     shape.positionOffset = 4 * 0;
 
     if(hasNormals) shape.normalOffset = 4 * 3;
-    if (hasUVs) shape.texCoordOffset = 4 * (3 + (hasNormals ? 3 : 0));
-
-    shape.hasNormals = hasNormals;
-    shape.hasUVs = hasUVs;
+    if(hasUVs) shape.texCoordOffset = 4 * (3 + (hasNormals ? 3 : 0));
+    if(hasOtherCoords) shape.otherOffset = 4 * (3 + (hasNormals ? 3 : 0) + (hasUVs ? 2 : 0));
 
     return shape;
 }
 
 function createShapeOG(gl, shapeData) {
-    var shape = {};
+    let shape = {};
 
-    var vertexData = [];
-    var vertexCount = shapeData.positions.length / 3;
-    for (var i = 0; i < vertexCount; i++) {
+    let vertexData = [];
+    let vertexCount = shapeData.positions.length / 3;
+    for (let i = 0; i < vertexCount; i++) {
         vertexData.push(shapeData.positions[3 * i], shapeData.positions[3 * i + 1], shapeData.positions[3 * i + 2]);
         vertexData.push(shapeData.normals[3 * i], shapeData.normals[3 * i + 1], shapeData.normals[3 * i + 2]);
         vertexData.push(shapeData.texCoords[2 * i], shapeData.texCoords[2 * i + 1]);
     }
-    var vertexArray = new Float32Array(vertexData);
-    var vertexBuffer = gl.createBuffer();
+    let vertexArray = new Float32Array(vertexData);
+    let vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    var indexArray = new Uint16Array(shapeData.indices);
-    var indexBuffer = gl.createBuffer();
+    let indexArray = new Uint16Array(shapeData.indices);
+    let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indexArray, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -248,6 +260,11 @@ function draw(gl, program, shape, initialize) {
         gl.vertexAttribPointer(program.vert_texCoord, 2, gl.FLOAT, false, shape.stride, shape.texCoordOffset);
     }
 
+    if(shape.hasOtherCoords) {
+        gl.enableVertexAttribArray(program.vert_other);
+        gl.vertexAttribPointer(program.vert_other, 1, gl.FLOAT, false, shape.stride, shape.otherOffset);
+    }
+
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, shape.indexBuffer);
@@ -263,13 +280,13 @@ function setupTexture(gl, program, texture, activeTexture, textureIdx) {
     // Step 2: Bind the texture you want to use:
     gl.bindTexture(gl.TEXTURE_2D, texture);
     // Step 3: Set the texture uniform to the "index" of the texture unit you just activated
-    var textureLocation = gl.getUniformLocation(program, "texture1");
+    let textureLocation = gl.getUniformLocation(program, "texture1");
     gl.uniform1i(textureLocation, textureIdx);
 }
 
-var xAxis = vec3.fromValues(1, 0, 0);
-var yAxis = vec3.fromValues(0, 1, 0);
-var zAxis = vec3.fromValues(0, 0, 1);
+let xAxis = vec3.fromValues(1, 0, 0);
+let yAxis = vec3.fromValues(0, 1, 0);
+let zAxis = vec3.fromValues(0, 0, 1);
 
 function getModel(transform) {
     // translate
@@ -342,10 +359,10 @@ function updateMVP(gl, program, transform, camera) {
     let projectionMatrix = getProjection(camera);
     let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
 
-    var modelLocation = gl.getUniformLocation(program, "model");
-    var viewLocation = gl.getUniformLocation(program, "view");
-    var projectionLocation = gl.getUniformLocation(program, "projection");
-    var normalMatLocation = gl.getUniformLocation(program, "normalMat");
+    let modelLocation = gl.getUniformLocation(program, "model");
+    let viewLocation = gl.getUniformLocation(program, "view");
+    let projectionLocation = gl.getUniformLocation(program, "projection");
+    let normalMatLocation = gl.getUniformLocation(program, "normalMat");
 
     gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
@@ -362,13 +379,18 @@ lightPositions must be an array of 3 x numLights elements, where each set of 3
     values are a vec3 representing the position of that light source in space
 */
 function updateLights(gl, program, numLights, lightColors, lightPositions) {
-    var numLightsLocation = gl.getUniformLocation(program, "numLights");
-    var lightColorsLocation = gl.getUniformLocation(program, "lightColors");
-    var lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
+    let numLightsLocation = gl.getUniformLocation(program, "numLights");
+    let lightColorsLocation = gl.getUniformLocation(program, "lightColors");
+    let lightPositionsLocation = gl.getUniformLocation(program, "lightPositions");
+
+    let ambientLightLocation = gl.getUniformLocation(program, "ambientLight");
+    console.log(ambientLightLocation);
 
     gl.uniform1i(numLightsLocation, numLights);
     gl.uniform3fv(lightColorsLocation, lightColors);
     gl.uniform3fv(lightPositionsLocation, lightPositions);
+
+    gl.uniform3f(ambientLightLocation, ambientLight[0], ambientLight[1], ambientLight[2]);
 }
 
 // function storeLocations(gl, program) {
@@ -394,9 +416,9 @@ function doCubeMarchingStuff(material) {
 }
 
 // Give camera default values for now
-var camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
-var camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
-var scene = new Scene(camera);
+let camTransform = new Transform(vec3.create(), vec3.create(), vec3.fromValues(1, 1, 1));
+let camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
+let scene = new Scene(camera);
 
 window.addEventListener("keydown", function (event) {
   let speed = 0.4;
@@ -415,22 +437,24 @@ window.addEventListener("keydown", function (event) {
   }
 },false);
 
-var timeElapsed = 0;
-var currently_moving = false;
-var counter =0;
+let timeElapsed = 0;
+let currently_moving = false;
+let counter =0;
 
-var mouseisDown = false;
+let mouseisDown = false;
 
 // Start and Run WebGL
 function startWebGL() {
     noise.seed(0);
 
     // get all images
-    var queue = new createjs.LoadQueue(true);
+    let queue = new createjs.LoadQueue(true);
     queue.loadFile({ id: "floor", src: "data/floor.jpg", type: "image" });
     queue.loadFile({ id: "wall", src: "data/wall.jpg", type: "image" });
 
-    var path = "data/field-skyboxes/Meadow/";
+    queue.loadFile({ id: "moss", src: "data/moss.jpg", type: "image" });
+
+    let path = "data/field-skyboxes/Meadow/";
 
     queue.loadFile({ id: "skyPosX", src: (path + "posx.jpg"), type: "image" });
     queue.loadFile({ id: "skyNegX", src: (path + "negx.jpg"), type: "image" });
@@ -442,46 +466,52 @@ function startWebGL() {
     queue.on("complete", function () {
         scene.images.floorImage = queue.getResult("floor");
         scene.images.wallImage = queue.getResult("wall");
+        scene.images.mossImage = queue.getResult("moss");
         runWebGL(queue);
     }, this);
 }
 
 function runWebGL(queue) {
-    var gl = initializeWebGL($("#webglCanvas"));
+    // BEGIN CUBE MARCHING
+    doCubeMarchingStuff();
+    // END CUBE MARCHING
 
-    var surfaceShader = new Shader(
+    let gl = initializeWebGL($("#webglCanvas"));
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // SET UP SHADERS
+
+    let surfaceShader = new Shader(
         gl,
         "surfaceVertexShader",
         "surfaceFragmentShader"
     );
 
-    var lightShader = new Shader(
+    // let waterShader = new Shader(
+    //     gl,
+    //     "waterVertexShader",
+    //     "waterFragmentShader",
+    //     true, true, true,
+    //     "vert_height"
+    // );
+
+    let skyboxShader = new Shader(
+        gl,
+        "skyboxVertexShader",
+        "skyboxFragmentShader"
+    );
+
+    let lightShader = new Shader(
         gl,
         "lightVertexShader",
         "lightFragmentShader"
     );
-
-    // var program = createGlslProgram(gl, "vertexShader", "fragmentShader");
-    // var program = surfaceShader.program;
-    // storeLocations(gl, program);
-
-    // Set up lights
-    let numLights = 3; // Currently, shader only allows for 8
-
-    let lightColors = [
-        100.0, 100.0, 100.0,
-        75.0, 0.0, 0.0,
-        0.0, 25.0, 50.0,
-    ];
-    let lightPositions = [
-        0.0, 0.0, 10.0,
-        0.0, 10.0, 10.0,
-        10.0, 0.0, 10.0,
-    ];
-
+  
     //Sky Box stuff
-    // var box = createBox(gl, 100, 100);
-    // var textures = [];
+    // let box = createBox(gl, 100, 100);
+    // let textures = [];
     // textures.push(queue.getResult("skyPosX", false));
     // textures.push(queue.getResult("skyNegX", false));
     // textures.push(queue.getResult("skyPosZ", false));
@@ -489,8 +519,8 @@ function runWebGL(queue) {
     // textures.push(queue.getResult("skyNegY", false)); // Switched order
     // textures.push(queue.getResult("skyPosY", false));
 
-    // var cubeMap = createCubeMapTexture(gl, textures);
-    // var skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
+    // let cubeMap = createCubeMapTexture(gl, textures);
+    // let skyBoxProgram = createGlslProgram(gl, "vertexShaderSkyBox", "fragmentShaderSkyBox");
     // skyBoxProgram.texture = gl.getUniformLocation(skyBoxProgram, "texture");
     // skyBoxProgram.vert_position = gl.getAttribLocation(skyBoxProgram, "vert_position");
     // skyBoxProgram.xform_projMat = gl.getUniformLocation(skyBoxProgram, "xform_projMat");
@@ -514,12 +544,12 @@ function runWebGL(queue) {
 
     //     // gl.useProgram(null);
     // };
-
-    // setup shaders
+    
     let floorImage = scene.images.floorImage;
-    let wallImage = scene.images.wallImage;
-    var floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
-    var wallTexture = loadTexture(gl, wallImage, gl.TEXTURE1);
+    let mossImage = scene.images.mossImage;
+    let floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
+
+    let mossTexture = loadTexture(gl, mossImage, gl.TEXTURE1);
 
     // make camera and add it to the scene
     let fov = Math.PI / 4;
@@ -532,71 +562,216 @@ function runWebGL(queue) {
 
     // ADD STUFF TO SCENE
 
-    // let quad = getQuadMesh(vec3.fromValues(3, 0, 0), vec3.fromValues(0, Math.PI / 2, 0), 1, 1);
-    // quad.material.texture = floorTexture;
-    // scene.addSceneObject(quad);
+    let ambientLight = vec3.fromValues(0.05, 0.1, 0.2);
+    let dirLightDirection = vec3.fromValues(1.0, 1.0, 1.0);
+    let dirLightColor = vec3.fromValues(0.2, 0.25, 0.3);
 
-    // let surface = makeSurface(200, 256, vec3.fromValues(0, 0, -0.5), surfaceShader);
-    // // surface.material.texture = floorTexture;
+    // Set up lights
+    let numLights = 0; // Currently, shader only allows for 8
+
+    let lightColors = [];
+    let lightPositions = [];
+
+    function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
+        numLights++;
+        lightColors.push(colorR, colorG, colorB);
+        lightPositions.push(posX, posY, posZ)
+    }
+
+    //        Red   Green Blue   X     Y     Z
+    // makeLight(50.0, 50.0, 50.0,  10.0, 0.0,  5.0);
+    // makeLight( 0.0, 10.0, 20.0,  10.0, 10.0, 5.0);
+    // makeLight( 0.0, 25.0, 50.0,  20.0, 0.0,  5.0);
+
+    // let maxColor = 0;
+
+    for(let i = 0; i < 5; i++) {
+        let x = (Math.random() * WIDTH - (WIDTH / 2));
+        let y = (Math.random() * WIDTH - (WIDTH / 2));
+        let r = Math.random() * 50;
+        let g = Math.random() * 100;
+        let b = Math.random() * 150;
+        // maxColor = Math.Math.max(Math.max(r, g), b);
+        makeLight(
+            r, g, b,
+            x, y, 10 * Math.random() + getHeight(x, y) + 3
+        );
+    }
+
+    // The following commented out loop will draw a cube for each point light
+
+    for(let i = 0; i < numLights; i++) {
+        // Make the max coordinate of the color equal to 1, and scale down the
+        // others accordingly.
+        color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
+
+        let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
+        vec3.scale(color, color, 1.0 / maxColorChannel);
+        // vec3.scale(color, color, 1.0 / maxColor);
+
+        scene.addSceneObject(makeBox(
+            color,
+            vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
+            1,
+            lightShader
+        ));
+    }
+
+    // let surface = makeSurface(WIDTH, 128, vec3.fromValues(0, 0, -0.5), surfaceShader);
+    // surface.material.texture = floorTexture;
     // scene.addSceneObject(surface);
-    let cubeMarchMaterial = new Material(surfaceShader);
-    // cubeMarchMaterial.setColor(vec3.fromValues(1, 1, 1));
-    doCubeMarchingStuff(cubeMarchMaterial);
+
+    let surfaces = [];
+    
+    for(let x = 0; x < 3; x++) {
+        surfaces.push([]);
+        for(let y = 0; y < 3; y++) {
+            surfaces[x].push(makeSurface((x - 1) * WIDTH, (y - 1) * WIDTH, surfaceShader, mossTexture));
+
+            // scene.meshObjects.push(makeWater((x - 1) * WIDTH, (y - 1) * WIDTH, waterShader));
+        }
+    }
+
+    let textures = [];
+    textures.push(queue.getResult("skyPosX", false));
+    textures.push(queue.getResult("skyNegX", false));
+    textures.push(queue.getResult("skyNegY", false)); // Switched order
+    textures.push(queue.getResult("skyPosY", false));
+    textures.push(queue.getResult("skyPosZ", false));
+    textures.push(queue.getResult("skyNegZ", false));
+
+    let cubeMapTexture = createCubeMapTexture(gl, textures);
+
+    let skyboxMesh = makeBox(
+        vec3.create(),
+        vec3.create(),
+        1,
+        skyboxShader,
+        vec3.fromValues(-Math.PI / 2.0, 0.0, 0.0)
+    );
+
+    // console.log(scene.camera.transform.position);
+
+    let surfaceCenter = [surfaces[1][1].transform.position[0], surfaces[1][1].transform.position[1]];
 
     // STOP ADDING STUFF TO THE SCENE
 
     // setup time stuff
-    var lastTime = jQuery.now();
-    var deltaTime = 0;
+    let lastTime = jQuery.now();
+    let deltaTime = 0
 
     function updateWebGl() {
-        // Time STUFF
+        // Update time
         deltaTime = jQuery.now() - lastTime;
         lastTime = jQuery.now();
+      
+        // If the current position is out of the following bounds
+        let xNegBound = scene.camera.transform.position[0] - surfaceCenter[0] < -WIDTH / 2;
+        let xPosBound = scene.camera.transform.position[0] - surfaceCenter[0] > WIDTH / 2;
 
-        // let drawBox = function(box, tex, proj, view, model) {
-        //     skyBoxProgram.draw(gl, box, function () {
-        //         if (skyBoxProgram.xform_projMat != null) {
-        //             gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
-        //         }
-        //         if (skyBoxProgram.xform_viewMat != null) {
-        //             gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
-        //         }
-        //         if (skyBoxProgram.xform_modelMat != null) {
-        //             gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
-        //         }
-        //         if (skyBoxProgram.texture != null) {
-        //             gl.activeTexture(gl.TEXTURE0);
-        //             gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
-        //             gl.uniform1i(skyBoxProgram.texture, 0);
-        //         }
-        //     });
-        // }
+        let yNegBound = scene.camera.transform.position[1] - surfaceCenter[1] < -WIDTH / 2;
+        let yPosBound = scene.camera.transform.position[1] - surfaceCenter[1] > WIDTH / 2;
 
-        // Draw skybox before depth testing
-        gl.clearDepth(1.0);
-        gl.clearColor(0.3, 0.7, 1.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        gl.disable(gl.DEPTH_TEST);
+        let newCenter = [surfaceCenter[0], surfaceCenter[1]];
 
-        // Because the project uses coordinate system with Z going up/down
-        // var skyBoxModel = mat4.create();
-        // var rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
-        // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
-        //
-        // var skyBoxView = mat4.create();
-        // var skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
-        // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
-        //
-        // var skyBoxProj = getProjection(fov, aspectRatio, near, far);
-        //
-        // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+        if(xNegBound) {
+            newCenter[0] -= WIDTH;
+        } else if(xPosBound) {
+            newCenter[0] += WIDTH;
+        }
+        if(yNegBound) {
+            newCenter[1] -= WIDTH;
+        } else if(yPosBound) {
+            newCenter[1] += WIDTH;
+        }
 
-        gl.enable(gl.DEPTH_TEST);
+        let updateSurfaces = false;
 
-        let drawMesh = function(mesh) {
-            let shader = mesh.material.shader;
+        // As the camera moves in a direction, shift everything in the other
+        // direction. For example, as it moves forward, shift everything back
+
+        // Spaces that must be created will be out of bounds, which will result in them
+        // being undefined. They will have to be recalculated
+        if(newCenter[0] < surfaceCenter[0]) {
+            for(let x = 2; x >= 0; x--) { // Iterate down so x - 1 isn't already edited
+                for(let y = 0; y < 3; y++) {
+                    // Have to manually assign undefined, because surfaces[x - 1]
+                    // is undefined and therefore has no property [y]
+                    surfaces[x][y] = (x - 1 < 0 ? undefined : surfaces[x - 1][y]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        } else if(newCenter[0] > surfaceCenter[0]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    // Have to manually assign undefined, because surfaces[x + 1]
+                    // is undefined and therefore has no property [y]
+                    surfaces[x][y] = (x + 1 >= 3 ? undefined : surfaces[x + 1][y]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        }
+        
+        if(newCenter[1] < surfaceCenter[1]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 2; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
+                    surfaces[x][y] = (y - 1 < 0 ? undefined : surfaces[x][y - 1]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        } else if(newCenter[1] > surfaceCenter[1]) {
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    surfaces[x][y] = (y + 1 >= 3 ? undefined : surfaces[x][y + 1]);
+                }
+            }
+            surfaceCenter = newCenter;
+            updateSurfaces = true;
+        }
+
+        // Make new surfaces for each space that is undefined
+        if(updateSurfaces) {
+            // console.log(scene.camera.transform.position);
+            for(let x = 0; x < 3; x++) {
+                for(let y = 0; y < 3; y++) {
+                    if(surfaces[x][y] === undefined) {
+                        surfaces[x][y] = makeSurface(
+                            surfaceCenter[0] + ((x - 1) * WIDTH),
+                            surfaceCenter[1] + ((y - 1) * WIDTH),
+                            surfaceShader
+                        );
+                    }
+                }
+            }
+        }
+
+        let drawBox = function(box, tex, proj, view, model) {
+            skyBoxProgram.draw(gl, box, function () {
+                if (skyBoxProgram.xform_projMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_projMat, false, proj);
+                }
+                if (skyBoxProgram.xform_viewMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_viewMat, false, view);
+                }
+                if (skyBoxProgram.xform_modelMat != null) {
+                    gl.uniformMatrix4fv(skyBoxProgram.xform_modelMat, false, model);
+                }
+                if (skyBoxProgram.texture != null) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+                    gl.uniform1i(skyBoxProgram.texture, 0);
+                }
+            });
+        }
+
+        let drawMesh = function(mesh, shader = undefined) {
+            if(shader == undefined) shader = mesh.material.shader;
             let program = shader.program;
+
+            shader.use(gl);
 
             if (mesh.material.textureIdx > -1) {
                 setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
@@ -614,21 +789,111 @@ function runWebGL(queue) {
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
 
+                gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
+                gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
+
+                gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
+
+                // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
+
+            // } else if (shader == waterShader) {
+            //     updateMVP(gl, program, mesh.transform, scene.camera);
+
+            //     gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
+            //     gl.uniform3fv(gl.getUniformLocation(program, "lightPositions"), lightPositions);
+
+            //     gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightDirection"), dirLightDirection[0], dirLightDirection[1], dirLightDirection[2]);
+            //     gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
+
+            //     // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
+            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
+            //     // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
+
+            } else if(shader == skyboxShader) {
+                function updateSkyboxMVP(gl, program, transform, camera) {
+                    let modelMatrix = getModel(transform);
+                    
+                    let viewMatrix = mat4.create();
+                    mat4.lookAt(viewMatrix, vec3.create(), camera.getCamDir(), camera.camUp);
+
+                    let projectionMatrix = getProjection(camera);
+                    // let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
+                
+                    let modelLocation = gl.getUniformLocation(program, "model");
+                    let viewLocation = gl.getUniformLocation(program, "view");
+                    let projectionLocation = gl.getUniformLocation(program, "projection");
+                    // let normalMatLocation = gl.getUniformLocation(program, "normalMat");
+                
+                    gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
+                    gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
+                    gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
+                    // gl.uniformMatrix3fv(normalMatLocation, false, normalMatrix);
+                }
+
+                updateSkyboxMVP(gl, program, mesh.transform, scene.camera);
+
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+                gl.uniform1i(gl.getUniformLocation(program, "skyBox"), 0);
+
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
-                
-                gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color)
-
+                gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
             }
 
             draw(gl, program, shape, () => {});
         }
 
+        // Draw skybox before depth testing
+        gl.clearDepth(1.0);
+        gl.clearColor(0.3, 0.7, 1.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+
+        drawMesh(skyboxMesh, skyboxShader);
+
+        // skyboxShader.use(gl);
+
+        // let shape = createShape(gl, skyboxMesh.geometry);
+
+        // updateMVP(gl, skyboxShader.program, skyboxMesh.transform, scene.camera);
+
+        // gl.activeTexture(gl.TEXTURE0);
+        // gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
+        // gl.uniform1i(gl.getUniformLocation(skyboxShader.program, "skyBox"), 0);
+
+        // drawMesh(gl, skyboxShader.program, shape, () => {});
+
+        // Because the project uses coordinate system with Z going up/down
+        // let skyBoxModel = mat4.create();
+        // let rotationAxis = vec3.fromValues(1.0, 0.0, 0.0);
+        // mat4.fromRotation(skyBoxModel, -Math.PI / 2.0, rotationAxis);
+        //
+        // let skyBoxView = mat4.create();
+        // let skyBoxEye = vec3.fromValues(0.0, 0.0, 0.0);
+        // mat4.lookAt(skyBoxView, skyBoxEye, scene.camera.transform.position, scene.camera.defaultCamDir);
+        //
+        // let skyBoxProj = getProjection(fov, aspectRatio, near, far);
+        //
+        // drawBox(box, cubeMap, skyBoxProj, skyBoxView, skyBoxModel);
+
+        gl.enable(gl.DEPTH_TEST);
+
         // draw all scene objects
-        // TODO: Don't assume a single texture for each object, don't assume it's stored in a variable called "texture1"
+        // TODO: Don't assume a single texture for each object, don't assume it's stored in a letiable called "texture1"
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
         
         // if (gl.getUniformLocation(program, "texture1") != null) {
+        for (let x = 0; x < 3; x++) {
+            for (let y = 0; y < 3; y++) {
+                drawMesh(surfaces[x][y]);
+            }
+        }
         for (let i = 0; i < scene.meshObjects.length; i++) {
             drawMesh(scene.meshObjects[i]);
         }
