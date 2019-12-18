@@ -7,6 +7,7 @@ var mouseInfo = {
   diffX:0,
   diffY:0
 };
+var toggle = true
 let sqr = function(x) { return x * x; }
 
 function initializeWebGL(canvas) {
@@ -426,40 +427,68 @@ let scene = new Scene(camera);
 window.addEventListener("keydown", function (event) {
   let speed = 0.4;
   let turnSpeed = 0.05;
-  if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
+  if([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) {
+    event.preventDefault();
+  }
+  if (event.which == 87) { //w, move forward
     scene.camera.goForward(speed);
   }
-  if (event.which == 83 || event.which == 40) { //s or down arrow, move backwards
+  if (event.which == 83) { //s, move backwards
     scene.camera.goBackward(speed);
   }
-  if (event.which == 65 || event.which == 37) { //a or left arrow, move left
+  if (event.which == 65) { //a or left arrow, move left
     scene.camera.goLeft(speed);
   }
-  if (event.which == 68 || event.which == 39) { //d or right arrow, move right
+  if (event.which == 68) { //d, move right
     scene.camera.goRight(speed);
   }
-  if (event.which == 69) { //d or right arrow, move right
+  if (event.which == 69) {
     scene.camera.goUp(speed);
   }
-  if (event.which == 16) { //d or right arrow, move right
+  if (event.which == 16) {
     scene.camera.goDown(speed);
   }
+  if (event.which == 39) {
+    scene.camera.turnRight(turnSpeed);
+  }
+  if (event.which == 37) {
+    scene.camera.turnLeft(turnSpeed);
+  }
+  if (event.which == 40) {
+    scene.camera.turnUp(turnSpeed);
+  }
+  if (event.which == 38) {
+    scene.camera.turnDown(turnSpeed);
+  }
+  if (event.which == 84){
+    if (toggle == true){
+      toggle = false;
+    }
+    else if (toggle == false){
+      toggle = true;
+    }
+  }
+
 },false);
+
+
 
 function logMouse (event){
   // console.log(event.movementX);
   // console.log(event.movementY);
-  if(event.movementX > 0){
-    scene.camera.turnRight(.05);
-  }
-  if(event.movementX < 0){
-    scene.camera.turnLeft(.05);
-  }
-  if(event.movementY > 0){
-    scene.camera.turnUp(.03);
-  }
-  if(event.movementY < 0){
-    scene.camera.turnDown(.03);
+  if (toggle){
+    if(event.movementX > 0){
+      scene.camera.turnRight(.05);
+    }
+    if(event.movementX < 0){
+      scene.camera.turnLeft(.05);
+    }
+    if(event.movementY > 0){
+      scene.camera.turnUp(.03);
+    }
+    if(event.movementY < 0){
+      scene.camera.turnDown(.03);
+    }
   }
 }
 
