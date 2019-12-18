@@ -13,7 +13,9 @@ class Camera extends SceneObject {
 
         this.defaultCamDir = vec3.fromValues(1, 0, 0);
         this.camUp = vec3.fromValues(0, 0, 1);
-        this.currentHeading = 0.0;
+        this.currentHeadingX = 0.0;
+        this.currentHeadingY = 0.0;
+
         this.landHeight = 0.3;
     }
 
@@ -26,26 +28,50 @@ class Camera extends SceneObject {
     }
 
     turnRight(turnSpeed) {
-      this.currentHeading -= turnSpeed;
+      this.currentHeadingX -= turnSpeed;
       // Bound the angle
-      if(this.currentHeading >= Math.PI * 2.0) {
-        this.currentHeading -= Math.PI * 2.0;
-      } else if(this.currentHeading <= 0) {
-        this.currentHeading += Math.PI * 2.0;
+      if(this.currentHeadingX >= Math.PI * 2.0) {
+        this.currentHeadingX -= Math.PI * 2.0;
+      } else if(this.currentHeadingX <= 0) {
+        this.currentHeadingX += Math.PI * 2.0;
       }
 
-      this.transform.rotation = vec3.fromValues(0, 0, this.currentHeading);
+      this.transform.rotation[2] = this.currentHeadingX;
+    }
+
+    turnUp(turnSpeed) {
+      this.currentHeadingY += turnSpeed;
+      // Bound the angle
+      if(this.currentHeadingY >= Math.PI * 2.0) {
+        this.currentHeadingY -= Math.PI * 2.0;
+      } else if(this.currentHeadingY <= 0) {
+        this.currentHeadingY += Math.PI * 2.0;
+      }
+
+      this.transform.rotation[1] = this.currentHeadingY;
+    }
+
+    turnDown(turnSpeed) {
+      this.currentHeadingY -= turnSpeed;
+      // Bound the angle
+      if(this.currentHeadingY >= Math.PI * 2.0) {
+        this.currentHeadingY -= Math.PI * 2.0;
+      } else if(this.currentHeadingY <= 0) {
+        this.currentHeadingY += Math.PI * 2.0;
+      }
+
+      this.transform.rotation[1] = this.currentHeadingY;
     }
 
     turnLeft(turnSpeed) {
-      this.currentHeading += turnSpeed;
+      this.currentHeadingX += turnSpeed;
       // Bound the angle
-      if(this.currentHeading >= Math.PI * 2.0) {
-        this.currentHeading -= Math.PI * 2.0;
-      } else if(this.currentHeading <= 0) {
-        this.currentHeading += Math.PI * 2.0;
+      if(this.currentHeadingX >= Math.PI * 2.0) {
+        this.currentHeadingX -= Math.PI * 2.0;
+      } else if(this.currentHeadingX <= 0) {
+        this.currentHeadingX += Math.PI * 2.0;
       }
-      this.transform.rotation = vec3.fromValues(0, 0, this.currentHeading);
+      this.transform.rotation[2] = this.currentHeadingX;
     }
 
     goForward(speed) {
@@ -54,7 +80,7 @@ class Camera extends SceneObject {
       vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 
       //New height
-      scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
+      //scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
     }
 
     goBackward(speed) {
@@ -63,6 +89,6 @@ class Camera extends SceneObject {
       vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
 
       //New height
-      scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
+      //scene.camera.transform.position[2] = this.landHeight + this.offsetZ;
     }
 }

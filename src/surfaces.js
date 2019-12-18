@@ -60,33 +60,29 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
     // the smooth normal for that point
     let facetedNormals = [];
 
-    for(let x = -1; x <= numDivisions; x++) {
+    for(let x = 0; x < numDivisions; x++) {
         facetedNormals.push([]);
-        for(let y = -1; y <= numDivisions; y++) {
+        for(let y = 0; y < numDivisions; y++) {
 
             let xCoord = -(width / 2) + (x * space);
             let yCoord = -(width / 2) + (y * space);
 
-            // console.log(xCoord, yCoord);
+            geom.vertices.push(vec3.fromValues(
+                xCoord,
+                yCoord,
+                getHeightFunc(center[0] + xCoord, center[1] + yCoord)
+            ));
 
-            if(x >= 0 && x < numDivisions && y >= 0 && y < numDivisions) {
-                geom.vertices.push(vec3.fromValues(
-                    xCoord,
-                    yCoord,
-                    getHeightFunc(center[0] + xCoord, center[1] + yCoord)
-                ));
-
-                if(otherFunc != undefined) {
-                    geom.otherCoords.push(otherFunc(center[0] + xCoord, center[1] + yCoord));
-                }
-    
-                // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
-                geom.uvs.push(vec2.fromValues(x % 4 / 4, y % 4 / 4));
-
-                facetedNormals[x].push([]);
+            if(otherFunc != undefined) {
+                geom.otherCoords.push(otherFunc(center[0] + xCoord, center[1] + yCoord));
             }
 
-            if(x > 0 && y > 0 && x < numDivisions && y < numDivisions) {
+            // geom.normals.push(vec3.fromValues(0.0, 0.0, 1.0));
+            geom.uvs.push(vec2.fromValues(x % 4 / 4, y % 4 / 4));
+
+            facetedNormals[x].push([]);
+
+            if(x != 0 && y != 0) {
                 let bottomLeft = (x - 1) * numDivisions + (y - 1);
                 let bottomRight = x * numDivisions + (y - 1);
                 let topRight = x * numDivisions + y;
@@ -135,6 +131,8 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
     let material = new Material(surfaceShader);
     material.setTexture(texture,1);
 
+
+
     // Create transform:
     let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
 
@@ -156,14 +154,16 @@ function makeSurface(x, y, shader,texture) {
 }
 
 function makeWater(x, y, shader) {
-    return makeSurfaceAdvanced(
-        WIDTH,
-        NUM_DIVISIONS,
-        vec3.fromValues(x, y, -0.5),
-        function(x, y) { return 0.0; },
-        shader,
-        getHeight
-    );
+    return getQuadMesh(vec3.fromValues(x, y, -0.5), vec3.create(), 3 * WIDTH, 3 * WIDTH, shader);
+
+    // return makeSurfaceAdvanced(
+    //     WIDTH,
+    //     NUM_DIVISIONS,
+    //     vec3.fromValues(x, y, -0.5),
+    //     function(x, y) { return 0.0; },
+    //     shader,
+    //     getHeight
+    // );
 }
 
 function makeBox(color, position, size, shader, rotation = vec3.create()) {
@@ -247,9 +247,9 @@ function getQuadMesh(center, rotation, width, height, shader) {
     }
 
     let bottomFace = new Face(0, 1, 2);
-    console.log(quadGeom.vertices[0], quadGeom.vertices[1], quadGeom.vertices[2]);
+    // console.log(quadGeom.vertices[0], quadGeom.vertices[1], quadGeom.vertices[2]);
     let topFace = new Face(0, 2, 3);
-    console.log(quadGeom.vertices[0], quadGeom.vertices[2], quadGeom.vertices[3]);
+    // console.log(quadGeom.vertices[0], quadGeom.vertices[2], quadGeom.vertices[3]);
     quadGeom.faces.push(bottomFace);
     quadGeom.faces.push(topFace);
 
