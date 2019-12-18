@@ -146,7 +146,7 @@ function makeSurface(x, y, shader,texture) {
     return makeSurfaceAdvanced(
         WIDTH,
         NUM_DIVISIONS,
-        vec3.fromValues(x, y, -0.5),
+        vec3.fromValues(x, y, 0.0),
         getHeight,
         shader,
         texture
@@ -154,7 +154,7 @@ function makeSurface(x, y, shader,texture) {
 }
 
 function makeWater(x, y, shader) {
-    return getQuadMesh(vec3.fromValues(x, y, -0.5), vec3.create(), 3 * WIDTH, 3 * WIDTH, shader);
+    return getQuadMesh(vec3.fromValues(x, y, 0.0), vec3.create(), 3 * WIDTH, 3 * WIDTH, shader);
 
     // return makeSurfaceAdvanced(
     //     WIDTH,

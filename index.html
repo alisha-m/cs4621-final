@@ -78,6 +78,8 @@ void main() {
 precision highp float;
 
 #define WATER
+#define SHORE
+// #define LUMINESCENT_SHORE
 
 #define MAX_LIGHTS 100
 
@@ -101,13 +103,18 @@ uniform vec3 ambientLight;
 uniform vec3 dirLightDirection;
 uniform vec3 dirLightColor;
 
+#ifdef LUMINESCENT_SHORE
 const vec3 SAND_COLOR = vec3(0.4,1.0,1.0);
+#elif defined SHORE
+const vec3 SAND_COLOR = vec3(0.5, 0.475, 0.35);
+#endif
+
 const vec3 WATER_COLOR = vec3(0.25, 0.40, 0.6);
 
-const float SAND_HEIGHT = 0.5;
+const float SAND_HEIGHT = 0.4;
 const float WATER_HEIGHT = 0.0;
-const float DEPTH_MURKINESS = 0.5;
-const float BASE_MURKINESS = 0.5;
+const float DEPTH_MURKINESS = 0.4;
+const float BASE_MURKINESS = 0.4;
 
 const float DIFFUSE_COEFF = 1.0;
 
@@ -140,14 +147,23 @@ void main() {
     if(distBelowSurface > 0.0) {
         waterAlpha = min(DEPTH_MURKINESS * distBelowSurface + BASE_MURKINESS, 1.0);
     }
+#ifdef SHORE
     else if(distBelowSurface > 0.0 - SAND_HEIGHT) {
         shoreAlpha = 1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT;
     }
 #endif
+#endif
 
 #ifdef WATER
     //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
-    gl_FragColor = (1.0 - waterAlpha) * (1.0 - shoreAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0) + shoreAlpha * vec4(SAND_COLOR,1.0);
+    gl_FragColor =
+        (1.0 - waterAlpha) * (1.0 - shoreAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) +
+#ifdef LUMINESCENT_SHORE
+        shoreAlpha * vec4(SAND_COLOR, 1.0) +
+#elif defined SHORE
+        shoreAlpha * vec4(SAND_COLOR, 1.0) * vec4(color, 1.0) +
+#endif
+        waterAlpha * vec4(WATER_COLOR, 1.0);
 #endif
 #ifndef WATER
     //gl_FragColor = vec4(color, 1.0);
