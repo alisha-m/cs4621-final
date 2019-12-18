@@ -1,5 +1,12 @@
 let canvas = document.getElementById("webglCanvas");
-
+var mouseInfo = {
+  oldMouseX:0,
+  oldMouseY:0,
+  MouseX:0,
+  MouseY:0,
+  diffX:0,
+  diffY:0
+};
 let sqr = function(x) { return x * x; }
 
 function initializeWebGL(canvas) {
@@ -159,7 +166,7 @@ function createShape(gl, geometry) {
 
     for (let i = 0; i < vertexCount; i++) {
         vertexData.push(geometry.vertices[i][0], geometry.vertices[i][1], geometry.vertices[i][2]);
-        
+
         if(hasNormals) {
             vertexData.push(geometry.normals[i][0], geometry.normals[i][1], geometry.normals[i][2]);
         }
@@ -169,7 +176,7 @@ function createShape(gl, geometry) {
         }
 
         if(hasOtherCoords) {
-            vertexData.push(geometry.otherCoords[i]); 
+            vertexData.push(geometry.otherCoords[i]);
         }
     }
 
@@ -433,6 +440,37 @@ window.addEventListener("keydown", function (event) {
   }
 },false);
 
+function logMouse (event){
+  // console.log(event.movementX);
+  // console.log(event.movementY);
+  if(event.movementX > 0){
+    scene.camera.turnRight(.05);
+  }
+  if(event.movementX < 0){
+    scene.camera.turnLeft(.05);
+  }
+  if(event.movementY > 0){
+    scene.camera.turnUp(.03);
+  }
+  if(event.movementY < 0){
+    scene.camera.turnDown(.03);
+  }
+}
+
+ window.addEventListener("mousemove", logMouse);
+//   let turnSpeed = 0.05;
+  // mouseInfo.mouseX = event.clientX;
+  // mouseInfo.mouseY = event.clientY;
+//   while (x > downx) {
+//     scene.camera.turnRight(turnSpeed);
+//   }
+//   while (x < downx) {
+//     scene.camera.turnLeft(turnSpeed);
+//   }
+//
+// },false);
+
+
 let timeElapsed = 0;
 let currently_moving = false;
 let counter =0;
@@ -537,7 +575,7 @@ function runWebGL(queue) {
 
     //     // gl.useProgram(null);
     // };
-    
+
     let floorImage = scene.images.floorImage;
     let wallImage = scene.images.wallImage;
     let floorTexture = loadTexture(gl, floorImage, gl.TEXTURE0);
@@ -614,7 +652,7 @@ function runWebGL(queue) {
     // scene.addSceneObject(surface);
 
     let surfaces = [];
-    
+
     for(let x = 0; x < 3; x++) {
         surfaces.push([]);
         for(let y = 0; y < 3; y++) {
@@ -650,7 +688,7 @@ function runWebGL(queue) {
 
     // setup time stuff
     let lastTime = jQuery.now();
-    let deltaTime = 0
+    let deltaTime = 0;
 
     function updateWebGl() {
         // Update time
@@ -705,7 +743,7 @@ function runWebGL(queue) {
             surfaceCenter = newCenter;
             updateSurfaces = true;
         }
-        
+
         if(newCenter[1] < surfaceCenter[1]) {
             for(let x = 0; x < 3; x++) {
                 for(let y = 2; y >= 0; y--) { // Iterate down so y - 1 isn't already edited
@@ -773,7 +811,7 @@ function runWebGL(queue) {
             let shape = createShape(gl, mesh.geometry);
 
             scene.camera.landHeight = 0.5; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
-            
+
             if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
@@ -809,18 +847,18 @@ function runWebGL(queue) {
             } else if(shader == skyboxShader) {
                 function updateSkyboxMVP(gl, program, transform, camera) {
                     let modelMatrix = getModel(transform);
-                    
+
                     let viewMatrix = mat4.create();
                     mat4.lookAt(viewMatrix, vec3.create(), camera.getCamDir(), camera.camUp);
 
                     let projectionMatrix = getProjection(camera);
                     // let normalMatrix = getNormalMatrix(modelMatrix, viewMatrix);
-                
+
                     let modelLocation = gl.getUniformLocation(program, "model");
                     let viewLocation = gl.getUniformLocation(program, "view");
                     let projectionLocation = gl.getUniformLocation(program, "projection");
                     // let normalMatLocation = gl.getUniformLocation(program, "normalMat");
-                
+
                     gl.uniformMatrix4fv(modelLocation, false, modelMatrix);
                     gl.uniformMatrix4fv(viewLocation, false, viewMatrix);
                     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
@@ -835,7 +873,7 @@ function runWebGL(queue) {
 
             } else if(shader == lightShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
-                
+
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
 
             }
@@ -881,7 +919,7 @@ function runWebGL(queue) {
         // draw all scene objects
         // TODO: Don't assume a single texture for each object, don't assume it's stored in a letiable called "texture1"
         // TODO: Don't assume the same program for every mesh, use program defined by mesh material
-        
+
         // if (gl.getUniformLocation(program, "texture1") != null) {
         for (let x = 0; x < 3; x++) {
             for (let y = 0; y < 3; y++) {
