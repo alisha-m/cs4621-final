@@ -106,15 +106,15 @@ uniform vec3 dirLightColor;
 #ifdef LUMINESCENT_SHORE
 const vec3 SAND_COLOR = vec3(0.4,1.0,1.0);
 #elif defined SHORE
-const vec3 SAND_COLOR = vec3(0.5, 0.475, 0.35);
+const vec3 SAND_COLOR = vec3(0.25,0.75,0.85);
 #endif
 
-const vec3 WATER_COLOR = vec3(0.25, 0.40, 0.6);
+const vec3 WATER_COLOR = vec3(0.16, 0.14, 0.28);
 
 const float SAND_HEIGHT = 0.4;
 const float WATER_HEIGHT = 0.0;
 const float DEPTH_MURKINESS = 0.4;
-const float BASE_MURKINESS = 0.4;
+const float BASE_MURKINESS = 0.5;
 
 const float DIFFUSE_COEFF = 1.0;
 
@@ -149,7 +149,7 @@ void main() {
     }
 #ifdef SHORE
     else if(distBelowSurface > 0.0 - SAND_HEIGHT) {
-        shoreAlpha = (1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT);
+        shoreAlpha = pow(1.0 - (-1.0 * distBelowSurface) / SAND_HEIGHT, 2.0);
     }
 #endif
 #endif

@@ -511,14 +511,14 @@ function startWebGL() {
 
     queue.loadFile({ id: "moss", src: "data/moss.jpg", type: "image" });
 
-    let path = "data/field-skyboxes/Meadow/";
+    let path = "data/night-sky/";
 
-    queue.loadFile({ id: "skyPosX", src: (path + "posx.jpg"), type: "image" });
-    queue.loadFile({ id: "skyNegX", src: (path + "negx.jpg"), type: "image" });
-    queue.loadFile({ id: "skyPosY", src: (path + "posy.jpg"), type: "image" });
-    queue.loadFile({ id: "skyNegY", src: (path + "negy.jpg"), type: "image" });
-    queue.loadFile({ id: "skyPosZ", src: (path + "posz.jpg"), type: "image" });
-    queue.loadFile({ id: "skyNegZ", src: (path + "negz.jpg"), type: "image" });
+    queue.loadFile({ id: "skyPosX", src: (path + "corona_ft.png"), type: "image" });
+    queue.loadFile({ id: "skyNegX", src: (path + "corona_bk.png"), type: "image" });
+    queue.loadFile({ id: "skyPosY", src: (path + "corona_up.png"), type: "image" });
+    queue.loadFile({ id: "skyNegY", src: (path + "corona_dn.png"), type: "image" });
+    queue.loadFile({ id: "skyPosZ", src: (path + "corona_rt.png"), type: "image" });
+    queue.loadFile({ id: "skyNegZ", src: (path + "corona_lf.png"), type: "image" });
 
     queue.on("complete", function () {
         scene.images.floorImage = queue.getResult("floor");
@@ -533,7 +533,7 @@ function startWebGL() {
         });
 */
         $.ajax({
-            url: "data/objects/mushroom.obj",
+            url: "data/objects/mushroom_free3d.obj",
             dataType: 'text'
         }).done(function(data) {
             var res = makeGeom(data);
@@ -611,13 +611,11 @@ function runWebGL(queue, geom) {
 
     // ADD STUFF TO SCENE
 
-    // let ambientLight = vec3.fromValues(0.05, 0.1, 0.2);
-    // let dirLightDirection = vec3.fromValues(1.0, 1.0, 1.0);
-    // let dirLightColor = vec3.fromValues(0.2, 0.25, 0.3);
-
-    let ambientLight = vec3.fromValues(0.3, 0.2, 0.05);
+    // let ambientLight = vec3.fromValues(0.3, 0.2, 0.05);
+    let ambientLight = vec3.fromValues(0.4, 0.4, 0.4);
     let dirLightDirection = vec3.fromValues(0.5, 1.0, 0.5);
-    let dirLightColor = vec3.fromValues(0.45, 0.5, 0.6);
+    let dirLightColor = vec3.fromValues(0.4, 0.4, 0.4);
+    // let dirLightColor = vec3.fromValues(0.45, 0.5, 0.6);
 
     // // Set up lights
     // let numLights = 0; // Currently, shader only allows for 8
