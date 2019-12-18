@@ -124,9 +124,7 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
 
     // Create material
     let material = new Material(surfaceShader);
-    material.setTexture(texture,1);
-
-
+    material.setTexture(texture, 1);
 
     // Create transform:
     let transform = new Transform(center, vec3.fromValues(0, 0, 0), vec3.fromValues(1, 1, 1));
@@ -137,7 +135,7 @@ function makeSurfaceAdvanced(width, numDivisions, center, getHeightFunc, surface
     return mesh;
 }
 
-function makeSurface(x, y, shader,texture) {
+function makeSurface(x, y, shader, texture) {
     return makeSurfaceAdvanced(
         WIDTH,
         NUM_DIVISIONS,

@@ -399,8 +399,10 @@ function lerpf(a, b, t) {
     return a + (b -a) * t;
 }
 
-function doCubeMarchingStuff(shader) {
+function doCubeMarchingStuff(shader, texture) {
     let material = new Material(shader);
+    material.setTexture(texture, 1);
+
     let cubeMarcher = new MarchingCubes(material);
 
     for (let i = 0; i < cubeMarcher.chunkMeshes.length; i++) {
@@ -682,7 +684,7 @@ function runWebGL(queue, geom) {
     // }
 
     // BEGIN CUBE MARCHING
-    doCubeMarchingStuff(noTexShader);
+    doCubeMarchingStuff(surfaceShader, mossTexture);
     // END CUBE MARCHING
 
     let numMeshes = 5;

@@ -1,6 +1,8 @@
 var CHUNK_LENGTH = 10;
 var pointsPerAxis = 10;
-let isoLevel = 4;
+let isoLevel = 10;
+
+let vertOffset = 1;
 
 let onEdge = function(n) {
     return n == 0 || n == pointsPerAxis - 1;
@@ -17,9 +19,9 @@ class MarchingCubes {
         let chunkMeshes = [];
 
         // for each chunk
-        for (let x = 0; x < 1; x++) {
-            for (let y = 0; y < 1; y++) {
-                let chunk = vec3.fromValues(x, y, 0);
+        for (let x = -2; x <= 2; x += 2) {
+            for (let y = -2; y <= 2; y += 2) {
+                let chunk = vec3.fromValues(x, y, vertOffset);
                 let points = this.getChunkPoints(chunk);
                 let pointNoiseValues = this.getPointNoiseValues(points);
                 let includedPoints = this.getIncludedPoints(pointNoiseValues);
@@ -27,7 +29,7 @@ class MarchingCubes {
                 let geometry = this.getChunkGeometry(chunk, points, pointNoiseValues, includedPoints);
 
                 let name = "Chunk: (" + x + ", " + y + ")";
-                let position = vec3.fromValues(0, 0, 10);
+                let position = vec3.fromValues(0, 0, 0);
                 let rotation = vec3.create();
                 let scale = vec3.fromValues(3, 3, 3);
                 let transform = new Transform(position, rotation, scale);
@@ -242,7 +244,7 @@ class MarchingCubes {
                 geometry.vertices.push(point);
 
                 // TODO: Add real uvs lmao
-                geometry.uvs.push(vec2.create());
+                geometry.uvs.push(vec2.create(i % 2, j % 2));
             }
         }
         // create  faces from indices
