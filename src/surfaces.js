@@ -148,15 +148,6 @@ function makeSurface(x, y, shader, texture) {
 
 function makeWater(x, y, shader) {
     return getQuadMesh(vec3.fromValues(x, y, 0.0), vec3.create(), 3 * WIDTH, 3 * WIDTH, shader);
-
-    // return makeSurfaceAdvanced(
-    //     WIDTH,
-    //     NUM_DIVISIONS,
-    //     vec3.fromValues(x, y, -0.5),
-    //     function(x, y) { return 0.0; },
-    //     shader,
-    //     getHeight
-    // );
 }
 
 function makeBox(color, position, size, shader, rotation = vec3.create()) {
@@ -240,9 +231,7 @@ function getQuadMesh(center, rotation, width, height, shader) {
     }
 
     let bottomFace = new Face(0, 1, 2);
-    // console.log(quadGeom.vertices[0], quadGeom.vertices[1], quadGeom.vertices[2]);
     let topFace = new Face(0, 2, 3);
-    // console.log(quadGeom.vertices[0], quadGeom.vertices[2], quadGeom.vertices[3]);
     quadGeom.faces.push(bottomFace);
     quadGeom.faces.push(topFace);
 
@@ -257,77 +246,3 @@ function getQuadMesh(center, rotation, width, height, shader) {
 
     return quadMesh;
 }
-
-
-
-
-// OLD FACETED (LOW-POLY) SURFACE MAKER
-
-// var space = width / numDivisions;
-
-    // var geom = new Geometry();
-
-    // geom.uvs.push(vec2.fromValues(0.0, 0.0)); // bottom left
-    // geom.uvs.push(vec2.fromValues(1.0, 0.0)); // bottom right
-    // geom.uvs.push(vec2.fromValues(1.0, 1.0)); // top right
-    // geom.uvs.push(vec2.fromValues(0.0, 1.0)); // top left
-
-    // for(var x = 0; x < numDivisions; x++) {
-    //     for(var y = 0; y < numDivisions; y++) {
-
-    //         var xCoord = center.x + (x * space);
-    //         var yCoord = center.y + (y * space);
-    //         geom.vertices.push(vec3.fromValues(xCoord, yCoord, getHeight(x, y)));
-
-    //         if(x != 0 && y != 0) {
-    //             var bottomLeft = (x - 1) * numDivisions + (y - 1);
-    //             var bottomRight = x * numDivisions + (y - 1);
-    //             var topRight = x * numDivisions + y;
-    //             var topLeft = (x - 1) * numDivisions + y;
-
-    //             var firstNormal = 2 * ((x - 1) * numDivisions + (y - 1));
-    //             var secondNormal = firstNormal + 1;
-
-    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
-    //                                         geom.vertices[bottomRight],
-    //                                         geom.vertices[topRight]));
-    //             geom.normals.push(getNormal(geom.vertices[bottomLeft],
-    //                                         geom.vertices[topRight],
-    //                                         geom.vertices[topLeft]));
-
-    //             var lowerFace = new Face();
-    //             lowerFace.setVertex(0, bottomLeft, 0, firstNormal);
-    //             lowerFace.setVertex(1, bottomRight, 1, firstNormal);
-    //             lowerFace.setVertex(2, topRight, 2, firstNormal);
-    //             geom.faces.push(lowerFace);
-
-    //             var upperFace = new Face();
-    //             upperFace.setVertex(0, bottomLeft, 0, secondNormal);
-    //             upperFace.setVertex(1, topRight, 2, secondNormal);
-    //             upperFace.setVertex(2, topLeft, 3, secondNormal);
-    //             geom.faces.push(upperFace);
-
-    //             // vertexData.push(getNormal(vertices[i0], vertices[i1], vertices[i2]),
-    //                             // getNormal(vertices[i0], vertices[i2], vertices[i3]));
-    //             // indexData.push(i0, i1, i2,
-    //                         //    i0, i2, i3);
-
-    //             // normals.push(getNormal(vertices[i0], vertices[i1], vertices[i2]));
-    //             // faces.push(makeFace(i0, i1, i2, 2 * (x * numDivisions + y)));
-
-    //             // normals.push(getNormal(vertices[i0], vertices[i2], vertices[i3]));
-    //             // faces.push(makeFace(i0, i2, i3, 2 * (x * numDivisions + y) + 1));
-    //         }
-    //     }
-    // }
-
-    // // Create material
-    // let mat = new Material("vertexShader", "fragmentShader");
-
-    // // Create transform:
-    // let transform = new Transform(center, 0.0, vec3.fromValues(width, width, 1));
-
-    // // Create mesh object
-    // let mesh = new MeshObject("Surface", transform, geom, mat);
-
-    // return mesh;

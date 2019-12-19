@@ -79,6 +79,10 @@ precision highp float;
 
 #define WATER
 #define SHORE
+
+// Makes shore a bright cyan that does not depend on the lighting (so it looks
+// more like a light source even though it actually produces no light). Otherwise
+// it will be a dependant on the light nearby
 #define LUMINESCENT_SHORE
 
 #define MAX_LIGHTS 100
@@ -155,7 +159,6 @@ void main() {
 #endif
 
 #ifdef WATER
-    //gl_FragColor = (1.0 - waterAlpha) * vec4(color, 1.0) + waterAlpha * vec4(WATER_COLOR, 1.0);
     gl_FragColor =
         (1.0 - waterAlpha) * (1.0 - shoreAlpha) * texture2D(texture1, texCoord) * vec4(color, 1.0) +
 #ifdef LUMINESCENT_SHORE
@@ -165,8 +168,8 @@ void main() {
 #endif
         waterAlpha * vec4(WATER_COLOR, 1.0);
 #endif
+
 #ifndef WATER
-    //gl_FragColor = vec4(color, 1.0);
     gl_FragColor = vec4(color, 1.0) * texture2D(texture1, texCoord); 
 #endif
 }
@@ -334,53 +337,6 @@ uniform samplerCube skybox;
 void main() {
     gl_FragColor = textureCube(skybox, texCoords);
 }
-</script>
-
-<script id="lightVertexShader" type="x-shader/x-vertex">
-attribute vec3 vert_position;
-
-// transformation matrices
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-uniform mat3 normalMat;
-
-void main() {
-    gl_Position = projection * view * model * vec4(vert_position, 1.0);
-}
-</script>
-<script id="lightFragmentShader" type="x-shader/x-fragment"> 
-precision highp float;
-
-uniform vec3 lightColor;
-
-void main() {
-    gl_FragColor = vec4(lightColor, 1.0);
-}
-</script>
-
-<script id="objVertexShader" type="x-shader/x-vertex">
-    attribute vec3 vert_position;
-    
-    // transformation matrices
-    uniform mat4 model;
-    uniform mat4 view;
-    uniform mat4 projection;
-    uniform mat3 normalMat;
-    
-    void main() {
-        gl_Position = projection * view * model * vec4(vert_position, 1.0);
-    }
-</script>
-
-<script id="objFragmentShader" type="x-shader/x-fragment"> 
-    precision highp float;
-    
-    uniform vec3 color;
-    
-    void main() {
-        gl_FragColor = vec4(color, 1.0);
-    }
 </script>
 
 <!-- Our own scripts -->

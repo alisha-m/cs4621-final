@@ -412,7 +412,11 @@ function doCubeMarchingStuff(shader, texture) {
 }
 
 // Give camera default values for now
-let camTransform = new Transform(vec3.fromValues(0, 0, Math.max(getHeight(0.0, 0.0), 0.0) + 0.5), vec3.create(), vec3.fromValues(1, 1, 1));
+let camTransform = new Transform(
+    vec3.fromValues(0, 0, Math.max(getHeight(0.0, 0.0), 0.0) + 0.5),
+    vec3.create(),
+    vec3.fromValues(1, 1, 1)
+);
 let camera = new Camera("Main Camera", camTransform, Math.PI / 4, 800/600, 0.1, 100);
 let scene = new Scene(camera);
 
@@ -463,10 +467,8 @@ window.addEventListener("keydown", function (event) {
 
 },false);
 
-function logMouse (event){
-  // console.log(event.movementX);
-  // console.log(event.movementY);
-  if (toggle){
+function logMouse (event) {
+  if (toggle) {
     if(event.movementX > 0){
       scene.camera.turnRight(.05);
     }
@@ -526,14 +528,6 @@ function startWebGL() {
         scene.images.floorImage = queue.getResult("floor");
         scene.images.wallImage = queue.getResult("wall");
         scene.images.mossImage = queue.getResult("moss");
-
-        var objs = [];/* 
-        var promise = new Promise(function(resolve, reject) {
-
-            resolve = () => loadGeom("src/Objects/cube.obj");
-            // loadGeom("src/Objects/cube.obj")
-        });
-*/
         $.ajax({
             url: "data/objects/mushroom.obj",
             dataType: 'text'
@@ -544,11 +538,6 @@ function startWebGL() {
         }).fail(function() {
             alert('Failed to retrieve [' + filename + "]");
         });
-/*
-        promise.then(function(data) {
-            console.log(data);
-            
-        });*/
         
     }, this);
 }
@@ -580,23 +569,11 @@ function runWebGL(queue, geom) {
         "skyboxVertexShader",
         "skyboxFragmentShader"
     );
-
-    let lightShader = new Shader(
-        gl,
-        "lightVertexShader",
-        "lightFragmentShader"
-    );
     
     let noTexShader = new Shader(
         gl,
         "noTexVertexShader",
         "noTexFragmentShader"
-    );
-
-    let objShader = new Shader( 
-        gl, 
-        "objVertexShader",
-        "objFragmentShader"
     );
     
     let floorImage = scene.images.floorImage;
@@ -613,75 +590,9 @@ function runWebGL(queue, geom) {
 
     // ADD STUFF TO SCENE
 
-    // let ambientLight = vec3.fromValues(0.3, 0.2, 0.05);
     let ambientLight = vec3.fromValues(0.4, 0.4, 0.4);
     let dirLightDirection = vec3.fromValues(0.5, 1.0, 0.5);
     let dirLightColor = vec3.fromValues(0.4, 0.4, 0.4);
-    // let dirLightColor = vec3.fromValues(0.45, 0.5, 0.6);
-
-    // // Set up lights
-    // let numLights = 0; // Currently, shader only allows for 8
-
-    // let lightColors = [];
-    // let lightPositions = [];
-
-    // function makeLight(colorR, colorG, colorB, posX, posY, posZ) {
-    //     numLights++;
-    //     lightColors.push(colorR, colorG, colorB);
-    //     lightPositions.push(posX, posY, posZ)
-    // }
-
-    //        Red   Green Blue   X     Y     Z
-    // makeLight(50.0, 50.0, 50.0,  10.0, 0.0,  5.0);
-    // makeLight( 0.0, 10.0, 20.0,  10.0, 10.0, 5.0);
-    // makeLight( 0.0, 25.0, 50.0,  20.0, 0.0,  5.0);
-
-    // let maxColor = 0;
-
-    // for(let i = 0; i < 5; i++) {
-    //     let x = (Math.random() * WIDTH - (WIDTH / 2));
-    //     let y = (Math.random() * WIDTH - (WIDTH / 2));
-    //     let r = Math.random() * 25;
-    //     let g = Math.random() * 50;
-    //     let b = Math.random() * 75;
-    //     // maxColor = Math.Math.max(Math.max(r, g), b);
-    //     makeLight(
-    //         r, g, b,
-    //         x, y, 10 * Math.random() + getHeight(x, y) + 3
-    //     );
-    // }
-
-    // The following commented out loop will draw a cube for each point light
-
-    // for(let i = 0; i < numLights; i++) {
-    //     // Make the max coordinate of the color equal to 1, and scale down the
-    //     // others accordingly.
-    //     color = vec3.fromValues(lightColors[(3 * i)], lightColors[(3 * i) + 1], lightColors[(3 * i) + 2]);
-
-    //     let maxColorChannel = Math.max(Math.max(color[0], color[1]), color[2]);
-    //     vec3.scale(color, color, 1.0 / maxColorChannel);
-    //     // vec3.scale(color, color, 1.0 / maxColor);
-
-    //     // scene.addSceneObject(makeBox(
-    //     //     color,
-    //     //     vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
-    //     //     1,
-    //     //     lightShader
-    //     // ));
-
-    //     let obj = makeMesh(
-    //         "cube",
-    //         vec3.fromValues(lightPositions[(3 * i)], lightPositions[(3 * i) + 1], lightPositions[(3 * i) + 2]),
-    //         vec3.create(),
-    //         1,
-    //         geom,
-    //         lightShader,
-    //         color
-    //     );
-    //     //console.log(obj);
-
-    //     scene.addSceneObject(obj);     
-    // }
 
     // BEGIN CUBE MARCHING
     doCubeMarchingStuff(surfaceShader, mossTexture);
@@ -836,7 +747,7 @@ function runWebGL(queue, geom) {
         }
 
         // Set up lights
-        let numLights = 0; // Currently, shader only allows for 8
+        let numLights = 0;
 
         let lightColors = [];
         let lightPositions = [];
@@ -872,17 +783,14 @@ function runWebGL(queue, geom) {
                 setupTexture(gl, program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
             }
 
-            // TODO: Don't assume that you're drawing a quad
             let shape = createShape(gl, mesh.geometry);
 
-            scene.camera.landHeight = 0.0; // getHeight(scene.camera.transform.position[0], scene.camera.transform.position[1]);
+            scene.camera.landHeight = 0.0;
 
             gl.useProgram(shader.program);
 
             if(shader == surfaceShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
-
-                // console.log(numLights, lightColors, lightPositions);
 
                 gl.uniform1i(gl.getUniformLocation(program, "numLights"), numLights);
                 gl.uniform3fv(gl.getUniformLocation(program, "lightColors"), lightColors);
@@ -926,10 +834,6 @@ function runWebGL(queue, geom) {
 
                 gl.uniform3f(gl.getUniformLocation(program, "camPos"), scene.camera.transform.position[0], scene.camera.transform.position[1], scene.camera.transform.position[2]);
 
-                // gl.uniform3f(gl.getUniformLocation(program, "ambientLight"), ambientLight[0], ambientLight[1], ambientLight[2]);
-                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightColor"), directionalLightColor[0], directionalLightColor[1], directionalLightColor[2]);
-                // gl.uniform3f(gl.getUniformLocation(program, "directionalLightDir"), directionalLightDir[0], directionalLightDir[1], directionalLightDir[2]);
-
             } else if(shader == skyboxShader) {
                 function updateSkyboxMVP(gl, program, transform, camera) {
                     let modelMatrix = getModel(transform);
@@ -957,10 +861,6 @@ function runWebGL(queue, geom) {
                 gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMapTexture);
                 gl.uniform1i(gl.getUniformLocation(program, "skyBox"), 0);
 
-            } else if(shader == lightShader) {
-                updateMVP(gl, program, mesh.transform, scene.camera);
-
-                gl.uniform3fv(gl.getUniformLocation(program, "lightColor"), mesh.material.color);
             } else if (shader == noTexShader) {
                 updateMVP(gl, program, mesh.transform, scene.camera);
 
@@ -973,9 +873,6 @@ function runWebGL(queue, geom) {
                 gl.uniform3f(gl.getUniformLocation(program, "dirLightColor"), dirLightColor[0], dirLightColor[1], dirLightColor[2]);
 
                 gl.uniform3fv(gl.getUniformLocation(program, "surfaceColor"), mesh.material.color);
-            } else if(shader == objShader) {
-                updateMVP(gl, program, mesh.transform, scene.camera);
-                gl.uniform3fv(gl.getUniformLocation(program, "color"), mesh.material.color);
             }
 
             draw(gl, program, shape, () => {});
@@ -990,15 +887,6 @@ function runWebGL(queue, geom) {
         drawMesh(skyboxMesh, skyboxShader);
 
         gl.enable(gl.DEPTH_TEST);
-
-        // draw all scene objects
-        // TODO: Don't assume a single texture for each object, don't assume it's stored in a letiable called "texture1"
-        // TODO: Don't assume the same program for every mesh, use program defined by mesh material
-
-        // let mesh = surfaces[0][0];
-        // if (mesh.material.textureIdx > -1) {
-        //     setupTexture(gl, surfaceShader.program, mesh.material.texture, mesh.material.textureIdx + gl.TEXTURE0, mesh.material.textureIdx);
-        // }
 
         for (let x = 0; x < numMeshes; x++) {
             for (let y = 0; y < numMeshes; y++) {
@@ -1021,33 +909,3 @@ function runWebGL(queue, geom) {
 }
 
 startWebGL();
-
-// window.addEventListener("keydown", function (event) {
-//   let speed = 0.1;
-//   let currentPos = scene.camera.transform.position;
-//   let moveAmount = vec3.create();
-
-//   if (event.which == 87 || event.which == 38) { //w or up arrow, move forward
-//     vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-//     vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-//   }
-
-// if (event.which == 83 || event.which == 40) { //s or down arrow, move backwards
-//   vec3.scale(moveAmount, scene.camera.defaultCamDir, speed);
-//   vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-// }
-// if (event.which == 65 || event.which == 37) { //a or left arrow, move left
-//   let dir = vec3.create();
-//   vec3.copy(dir,scene.camera.defaultCamDir);
-//   vec3.cross(dir, dir, scene.camera.camUp);
-//   vec3.scale(moveAmount, dir, speed);
-// //   vec3.sub(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-// }
-// if (event.which == 68 || event.which == 39) { //d or right arrow, move right
-//   let dir = vec3.create();
-//   vec3.copy(dir,scene.camera.defaultCamDir);
-//   vec3.cross(dir, dir, scene.camera.camUp);
-//   vec3.scale(moveAmount, dir, speed);
-// //   vec3.add(scene.camera.transform.position, scene.camera.transform.position, moveAmount);
-// }
-// },false);
